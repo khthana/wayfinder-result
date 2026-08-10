@@ -1,0 +1,21 @@
+# ไฟล์ชั่วคราวของ Word/Office
+~$*
+*.tmp
+
+# ผลลัพธ์ชั่วคราวจากการแปลงเอกสาร
+*.docx.bak
+clean.txt
+
+# ข้อมูลส่วนบุคคล — proposal ต้นฉบับของนักศึกษา ห้ามขึ้น repo
+CEPP68-*.docx
+*Proposal*.docx
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# scratch ของเครื่องมือ
+.scratch/

@@ -1,0 +1,1109 @@
+<title>Cross-Repo Entity Disambiguation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Trirong:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --paper:      #F7F8FA;
+    --surface:    #FFFFFF;
+    --surface-2:  #EEF1F5;
+    --ink:        #141A22;
+    --ink-2:      #35414F;
+    --muted:      #5A6674;
+    --line:       #D9DFE7;
+    --line-soft:  #E7ECF1;
+    --accent:     #0E7C86;
+    --accent-ink: #0A5B63;
+    --accent-wash:#E2F1F2;
+    --danger:     #A8323C;
+    --danger-wash:#F8E7E8;
+    --ok:         #2F6B4F;
+    --ok-wash:    #E4F0E9;
+    --warn:       #8C5A0F;
+    --warn-wash:  #F7EEDC;
+    --shadow:     0 1px 2px rgba(20,26,34,.06), 0 8px 24px -12px rgba(20,26,34,.14);
+
+    --measure: 68ch;
+    --s1: .375rem; --s2: .75rem; --s3: 1.125rem; --s4: 1.75rem;
+    --s5: 2.75rem; --s6: 4rem; --s7: 6rem;
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #10151B;
+      --surface:    #171E26;
+      --surface-2:  #1E2731;
+      --ink:        #E6EAF0;
+      --ink-2:      #C2CBD6;
+      --muted:      #93A0AE;
+      --line:       #2C3742;
+      --line-soft:  #232D37;
+      --accent:     #4BC3CE;
+      --accent-ink: #7FD8E0;
+      --accent-wash:#132D31;
+      --danger:     #E8737F;
+      --danger-wash:#2E181C;
+      --ok:         #6FC79A;
+      --ok-wash:    #14261E;
+      --warn:       #D9A44A;
+      --warn-wash:  #2A2214;
+      --shadow:     0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:      #10151B;
+    --surface:    #171E26;
+    --surface-2:  #1E2731;
+    --ink:        #E6EAF0;
+    --ink-2:      #C2CBD6;
+    --muted:      #93A0AE;
+    --line:       #2C3742;
+    --line-soft:  #232D37;
+    --accent:     #4BC3CE;
+    --accent-ink: #7FD8E0;
+    --accent-wash:#132D31;
+    --danger:     #E8737F;
+    --danger-wash:#2E181C;
+    --ok:         #6FC79A;
+    --ok-wash:    #14261E;
+    --warn:       #D9A44A;
+    --warn-wash:  #2A2214;
+    --shadow:     0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans Thai", "Segoe UI", system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--s5);
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: var(--s4) var(--s3) var(--s7);
+  }
+
+  @media (min-width: 1000px) {
+    .shell {
+      grid-template-columns: 216px minmax(0, 1fr);
+      gap: var(--s6);
+      padding-top: var(--s5);
+    }
+  }
+
+  /* ---------- nav rail ---------- */
+
+  .rail { font-size: .8125rem; }
+
+  @media (min-width: 1000px) {
+    .rail {
+      position: sticky;
+      top: var(--s4);
+      align-self: start;
+      max-height: calc(100vh - 4rem);
+      overflow-y: auto;
+    }
+  }
+
+  .rail-title {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .6875rem;
+    font-weight: 600;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-bottom: var(--s2);
+    border-bottom: 1px solid var(--line);
+    margin: 0 0 var(--s2);
+  }
+
+  .rail ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .rail ol + .rail-title { margin-top: var(--s4); }
+
+  .rail a {
+    display: block;
+    padding: .3rem 0;
+    color: var(--muted);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    padding-left: .625rem;
+    margin-left: -.625rem;
+    transition: color .15s, border-color .15s;
+  }
+  .rail a:hover, .rail a:focus-visible { color: var(--accent-ink); border-left-color: var(--accent); }
+
+  /* ---------- masthead ---------- */
+
+  .masthead { border-bottom: 2px solid var(--ink); padding-bottom: var(--s4); margin-bottom: var(--s5); }
+
+  .kicker {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .6875rem;
+    font-weight: 500;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    margin: 0 0 var(--s2);
+  }
+
+  h1 {
+    font-family: Trirong, Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(2rem, 5.2vw, 3.15rem);
+    line-height: 1.18;
+    letter-spacing: -.015em;
+    text-wrap: balance;
+    margin: 0 0 var(--s3);
+  }
+
+  .standfirst {
+    font-size: 1.0625rem;
+    color: var(--ink-2);
+    max-width: var(--measure);
+    margin: 0 0 var(--s4);
+    font-weight: 300;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s2) var(--s4);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .75rem;
+    color: var(--muted);
+  }
+  .meta b { color: var(--ink-2); font-weight: 500; }
+
+  /* ---------- structure ---------- */
+
+  .part { margin-bottom: var(--s7); }
+
+  .part-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s3);
+    padding: var(--s3) 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    margin-bottom: var(--s5);
+  }
+  .part-num {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .1em;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .part-head h2 {
+    font-family: Trirong, Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(1.45rem, 3.2vw, 1.9rem);
+    line-height: 1.3;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  section { margin-bottom: var(--s5); scroll-margin-top: var(--s3); }
+
+  h3 {
+    font-family: Trirong, Georgia, serif;
+    font-weight: 600;
+    font-size: 1.3rem;
+    line-height: 1.4;
+    margin: 0 0 var(--s3);
+    text-wrap: balance;
+  }
+
+  h4 {
+    font-size: .9375rem;
+    font-weight: 600;
+    margin: var(--s4) 0 var(--s2);
+    color: var(--ink);
+  }
+
+  p, li { max-width: var(--measure); }
+  p { margin: 0 0 var(--s3); }
+
+  ul, ol { margin: 0 0 var(--s3); padding-left: 1.25rem; display: flex; flex-direction: column; gap: var(--s1); }
+  li::marker { color: var(--muted); }
+
+  a { color: var(--accent-ink); text-underline-offset: 2px; text-decoration-thickness: 1px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+  strong { font-weight: 600; }
+  code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .875em;
+    background: var(--surface-2);
+    padding: .1em .35em;
+    border-radius: 3px;
+  }
+
+  /* ---------- verdict chips ---------- */
+
+  .chip {
+    display: inline-block;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .6875rem;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    padding: .15em .5em;
+    border-radius: 3px;
+    white-space: nowrap;
+    vertical-align: .08em;
+  }
+  .chip-bad  { background: var(--danger-wash); color: var(--danger); }
+  .chip-ok   { background: var(--ok-wash);     color: var(--ok); }
+  .chip-warn { background: var(--warn-wash);   color: var(--warn); }
+  .chip-note { background: var(--accent-wash); color: var(--accent-ink); }
+
+  /* ---------- tables ---------- */
+
+  .scroller { overflow-x: auto; margin: 0 0 var(--s4); border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+
+  table { border-collapse: collapse; width: 100%; font-size: .875rem; min-width: 34rem; }
+  th, td { text-align: left; padding: .7rem .85rem; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  th {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .6875rem;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td b { font-weight: 600; }
+  .num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* ---------- callouts ---------- */
+
+  .callout {
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    border-radius: 0 6px 6px 0;
+    padding: var(--s3) var(--s3) var(--s3) var(--s3);
+    margin: 0 0 var(--s4);
+    box-shadow: var(--shadow);
+  }
+  .callout > :last-child { margin-bottom: 0; }
+  .callout-danger { border-left-color: var(--danger); }
+  .callout-ok     { border-left-color: var(--ok); }
+  .callout-warn   { border-left-color: var(--warn); }
+
+  .callout-label {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .6875rem;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: var(--s2);
+  }
+
+  .thesis {
+    font-family: Trirong, Georgia, serif;
+    font-size: 1.1875rem;
+    line-height: 1.6;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  /* ---------- kill list ---------- */
+
+  .kill { list-style: none; padding: 0; gap: var(--s2); }
+  .kill li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--s2) var(--s3);
+    align-items: start;
+    padding: var(--s2) var(--s3);
+    background: var(--danger-wash);
+    border-radius: 5px;
+    max-width: none;
+  }
+  .kill q {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .8125rem;
+    color: var(--danger);
+    font-weight: 500;
+  }
+  .kill .why { grid-column: 2; font-size: .875rem; color: var(--ink-2); }
+
+  /* ---------- timeline ---------- */
+
+  .timeline { list-style: none; padding: 0; margin: 0 0 var(--s4); gap: 0; }
+  .timeline li {
+    display: grid;
+    grid-template-columns: 3.25rem 1fr;
+    gap: var(--s3);
+    padding: var(--s3) 0;
+    border-bottom: 1px solid var(--line-soft);
+    max-width: none;
+  }
+  .timeline li:last-child { border-bottom: none; }
+  .month {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--accent);
+    padding-top: .2rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .timeline h4 { margin: 0 0 .2rem; }
+  .timeline p { margin: 0; font-size: .875rem; color: var(--ink-2); }
+  .deliver {
+    display: inline-block;
+    margin-top: var(--s1);
+    font-size: .8125rem;
+    color: var(--accent-ink);
+  }
+  .deliver::before { content: "→ ส่งมอบ: "; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: .6875rem; letter-spacing: .05em; color: var(--muted); }
+
+  .gate {
+    display: grid;
+    grid-template-columns: 3.25rem 1fr;
+    gap: var(--s3);
+    padding: var(--s3);
+    margin: var(--s1) 0;
+    background: var(--warn-wash);
+    border-radius: 5px;
+  }
+  .gate .month { color: var(--warn); }
+  .gate p { margin: 0; font-size: .875rem; max-width: none; }
+
+  /* ---------- questions ---------- */
+
+  .qlist { list-style: none; padding: 0; counter-reset: q; gap: var(--s3); }
+  .qlist li {
+    counter-increment: q;
+    display: grid;
+    grid-template-columns: 1.75rem 1fr;
+    gap: var(--s3);
+    max-width: none;
+  }
+  .qlist li::before {
+    content: counter(q, decimal-leading-zero);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--accent);
+    padding-top: .28rem;
+  }
+  .qlist q { font-weight: 500; display: block; margin-bottom: .15rem; }
+  .qlist .why { grid-column: 2; font-size: .875rem; color: var(--muted); max-width: var(--measure); }
+
+  /* ---------- bibliography ---------- */
+
+  .bib { list-style: none; padding: 0; gap: 0; }
+  .bib li {
+    padding: var(--s3) 0;
+    border-bottom: 1px solid var(--line-soft);
+    max-width: none;
+    display: grid;
+    gap: var(--s1);
+  }
+  .bib li:last-child { border-bottom: none; }
+  .bib-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s2); }
+  .bib-id {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--accent-ink);
+  }
+  .bib-title { font-weight: 500; font-size: .9375rem; }
+  .bib-note { font-size: .875rem; color: var(--muted); max-width: var(--measure); }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s2) var(--s3);
+    padding: var(--s2) var(--s3);
+    background: var(--surface-2);
+    border-radius: 5px;
+    margin-bottom: var(--s4);
+    font-size: .8125rem;
+    color: var(--muted);
+    align-items: center;
+  }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: var(--s3);
+    margin-top: var(--s6);
+    font-size: .8125rem;
+    color: var(--muted);
+  }
+  footer p { max-width: var(--measure); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<div class="shell">
+
+  <nav class="rail" aria-label="สารบัญ">
+    <p class="rail-title">ส่วนที่ 1 · แนะแนว</p>
+    <ol>
+      <li><a href="#bottom-line">บรรทัดสรุป</a></li>
+      <li><a href="#verdicts">คำตัดสินรายข้ออ้าง</a></li>
+      <li><a href="#rag">ข้อกังขาเรื่อง RAG</a></li>
+      <li><a href="#prior">งานที่กินพื้นที่แล้ว</a></li>
+      <li><a href="#gaps">ช่องว่างที่เหลือ</a></li>
+      <li><a href="#ask">คำถามที่ควรถาม</a></li>
+    </ol>
+    <p class="rail-title">ส่วนที่ 2 · โครงร่าง</p>
+    <ol>
+      <li><a href="#thesis">หัวข้อและข้ออ้าง</a></li>
+      <li><a href="#scope">ขอบเขต</a></li>
+      <li><a href="#corpus">Corpus</a></li>
+      <li><a href="#eval">วิธีวัดผล</a></li>
+      <li><a href="#plan">แผน 8 เดือน</a></li>
+      <li><a href="#risk">ความเสี่ยง</a></li>
+      <li><a href="#bib">บรรณานุกรม</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <header class="masthead">
+      <p class="kicker">เอกสารแนะแนว senior project · วิศวกรรมคอมพิวเตอร์</p>
+      <h1>Cross-Repo Entity&nbsp;Disambiguation</h1>
+      <p class="standfirst">
+        บทวิเคราะห์ข้อเสนอ <i>Multi-Repo/Microservice Codebase Q&amp;A Harness</i> พร้อมโครงร่างที่ปรับใหม่
+        หลังพบว่า contribution ที่นักศึกษาตั้งใจจะเสนอถูกตีพิมพ์ไปแล้วเมื่อธันวาคม 2025
+        และช่องว่างสามข้อที่อ้างไว้ใน proposal ไม่เป็นความจริง
+      </p>
+      <div class="meta">
+        <span><b>นักศึกษา</b> ทำคนเดียว</span>
+        <span><b>ระยะเวลา</b> 2 ภาคเรียน · ~8 เดือน</span>
+        <span><b>ทรัพยากร</b> GPU server ภาควิชา</span>
+        <span><b>จัดทำ</b> 1 ก.ย. 2026</span>
+      </div>
+    </header>
+
+    <!-- ============ PART 1 ============ -->
+    <div class="part">
+      <div class="part-head">
+        <span class="part-num">ส่วนที่ 1</span>
+        <h2>เอกสารแนะแนวสำหรับอาจารย์</h2>
+      </div>
+
+      <section id="bottom-line">
+        <h3>บรรทัดสรุป</h3>
+        <div class="callout callout-danger">
+          <span class="callout-label">สิ่งที่ต้องรู้ก่อนพบนักศึกษา</span>
+          <p><strong>ข้อเสนอในรูปแบบปัจจุบันจะถูกกรรมการทุบได้ภายในห้านาที</strong> — ไม่ใช่เพราะไอเดียแย่
+          แต่เพราะการวางตำแหน่งผิด ข้ออ้างสามในสี่ประโยคที่ใช้สร้างความชอบธรรมให้โครงงานเป็นเท็จ
+          และ contribution หลักที่อ้างว่าเป็นของใหม่ ถูกตีพิมพ์ไปแล้วพร้อมผลที่ชนะทั้ง Copilot และ Cursor</p>
+          <p><strong>แต่นี่เป็นข่าวดี</strong> เพราะยังอยู่ในขั้นเสนอหัวข้อ ไม่ใช่เดือนที่หก
+          ปัญหาที่นักศึกษาจับได้นั้นเป็นปัญหาจริง — Sourcegraph วัดเองว่าช่องว่างประสิทธิภาพของ agent
+          บนงาน multi-repo กว้างกว่างาน single-repo — เพียงแต่ต้องเปลี่ยนสิ่งที่ประกาศว่าเป็นของใหม่</p>
+        </div>
+
+        <p>เอกสารนี้เสนอให้เปลี่ยนจาก <i>routing policy</i> ไปเป็น <strong>cross-repo entity
+        disambiguation</strong> ซึ่งเป็นช่องว่างที่งานสองชิ้นระบุตรงกันโดยอิสระว่าเป็น failure mode
+        อันดับหนึ่ง แต่ยังไม่มีใครแก้ ที่สำคัญกว่านั้นคือมันเป็น contribution ระดับ
+        <i>component</i> ไม่ใช่ระดับ <i>ระบบ</i> — <strong>นักศึกษาจึงไม่ต้องเอาชนะ Cursor
+        แบบตัวต่อตัว</strong> ซึ่งเป็นสิ่งที่คนทำคนเดียวไม่มีทางทำได้</p>
+      </section>
+
+      <section id="verdicts">
+        <h3>คำตัดสินรายข้ออ้าง</h3>
+        <p>ทุกประโยคใน proposal ที่ทำหน้าที่สร้างความชอบธรรม ถูกตรวจกับหลักฐานจริง:</p>
+
+        <ul class="kill">
+          <li>
+            <span class="chip chip-bad">ผิด</span>
+            <q>Cursor/Copilot are single-repo</q>
+            <span class="why">Cursor รองรับ multi-root workspace ตั้งแต่ราวพฤษภาคม 2025 และมี per-root indexing
+            กับ <code>@Codebase</code> ที่ค้นรวมกัน · Claude Code ทำ multi-repo ผ่าน <code>--add-dir</code>
+            เหลือเพียง <strong>Copilot</strong> ที่ข้ออ้างยังพอฟังขึ้น เพราะ semantic index ของ VS Code
+            มีปัญหาจริงใน multi-root workspace</span>
+          </li>
+          <li>
+            <span class="chip chip-bad">ผิด</span>
+            <q>No lightweight cross-repo solution currently exists</q>
+            <span class="why"><code>flupkede/codesearch</code> เป็น multi-repo semantic code search MCP server
+            เขียนด้วย Rust มี repo groups และ cross-repo RRF fan-out ranking — <strong>คือ “routing layer”
+            ที่นักศึกษาตั้งใจจะสร้างพอดี</strong> — รันออฟไลน์เต็มรูปแบบ ไม่ต้องใช้ GPU ไม่ต้องมี vector DB ภายนอก
+            ยังมี Sourcebot ที่ติดตั้งด้วย <code>docker compose up</code> คำสั่งเดียว</span>
+          </li>
+          <li>
+            <span class="chip chip-bad">ตายแล้ว</span>
+            <q>The routing/pruning policy is the core contribution</q>
+            <span class="why">arXiv 2512.05908 (ธ.ค. 2025) ทำ two-phase repository routing แล้วตามด้วย
+            in-repo localization บนระบบ 46 repository / 1.1M LOC ได้ Pass@10 = 0.82 ชนะ Copilot (0.61)
+            และ Cursor (0.57) · <strong>นักศึกษาต้องอ้างอิงงานชิ้นนี้ มิฉะนั้นเป็นปัญหา academic integrity</strong></span>
+          </li>
+          <li>
+            <span class="chip chip-bad">ผิด</span>
+            <q>real access is unavailable</q>
+            <span class="why">ไม่จริงสำหรับ open-source polyrepo organization — <code>kubernetes</code>,
+            HashiCorp, Grafana, Netflix OSS เปิดหมด ที่เข้าไม่ถึงคือ corpus ระดับองค์กรแบบปิด
+            ซึ่งโครงงานนี้ไม่จำเป็นต้องใช้</span>
+          </li>
+        </ul>
+
+        <div class="callout callout-ok">
+          <span class="callout-label">ข้อที่นักศึกษากังวลเกินจริง</span>
+          <p><strong>corpus สังเคราะห์ใช้ได้ ไม่ต้องกังวล</strong> — Train Ticket ตีพิมพ์ใน IEEE TSE,
+          TeaStore ใน IEEE MASCOTS 2018, Sock Shop ใน ECASE@ICSE 2017 และมี systematic mapping study
+          (AST 2024) ยืนยันการใช้ทั้งชุมชน ความเสี่ยงที่นักศึกษาระบุไว้ในหัวข้อ <i>Risk</i> จึงไม่ใช่ความเสี่ยงจริง</p>
+        </div>
+      </section>
+
+      <section id="rag">
+        <h3>ข้อกังขาที่อาจารย์ตั้งไว้ว่า “RAG น่าจะช้า”</h3>
+        <p>ข้อกังขานี้<strong>ถูก แต่ชี้ผิดมิติ</strong> และการชี้ให้ถูกมิติเปลี่ยนการออกแบบโครงงานทั้งหมด:</p>
+
+        <div class="scroller">
+          <table>
+            <thead>
+              <tr><th>มิติ</th><th>คำตัดสิน</th><th>หลักฐาน</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>Query latency</b></td>
+                <td><span class="chip chip-ok">ไม่ใช่ปัญหา</span></td>
+                <td>dense retrieval อยู่ระดับมิลลิวินาที และ <b>เร็วกว่า</b> agentic search
+                    ซึ่งต้องเสีย LLM round-trip หลายรอบต่อการค้นหนึ่งครั้ง</td>
+              </tr>
+              <tr>
+                <td><b>Cold-start indexing</b></td>
+                <td><span class="chip chip-warn">ช้าจริง</span></td>
+                <td>Cursor เปิดตัวเลข p99 ที่ <span class="num">4.03 ชม.</span> ก่อนทำ index reuse
+                    เหลือ <span class="num">21 วินาที</span> หลังทำ — แต่เป็น dedup ระดับแพลตฟอร์ม
+                    ที่นักศึกษาคนเดียวทำตามไม่ได้</td>
+              </tr>
+              <tr>
+                <td><b>Recall</b></td>
+                <td><span class="chip chip-bad">ปัญหาแท้จริง</span></td>
+                <td>embedding สำเร็จรูปตกจาก NDCG@10 <span class="num">71.7</span> บน code search ธรรมดา
+                    เหลือ <span class="num">20.3</span> เมื่อเปลี่ยนเป็นงาน issue-to-edit localization</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout callout-warn">
+          <span class="callout-label">ข้อควรระวังในการอ่านวรรณกรรมฝั่งอุตสาหกรรม</span>
+          <p>หลักฐานที่คนอ้างกันบ่อยที่สุดว่า “agentic grep ชนะ RAG” <strong>อ่อนกว่าที่เข้าใจกัน</strong> —
+          คำพูดที่ถูกยกมาซ้ำๆ ตามด้วยประโยคว่า <i>“This was just vibes, so internal vibes”</i> ทันที
+          ขณะที่การทดลอง A/B บน production ของ Cursor (พ.ย. 2025) วัดได้ว่า semantic search ให้ accuracy
+          <strong>+12.5%</strong> เหนือ grep อย่างเดียว และ Cursor เองก็ไป<strong>สร้าง</strong> trigram index เพิ่ม
+          ไม่ใช่เอา index ออก</p>
+          <p style="margin-bottom:0"><strong>สิ่งที่ควรบอกนักศึกษา:</strong> อย่าตั้งโจทย์เป็น “RAG vs agentic”
+          เพราะ hybrid คือคำตอบเชิงประจักษ์ และการตั้งโจทย์แบบขั้วตรงข้ามจะทำให้ถูกกรรมการที่ตามวรรณกรรมจับได้</p>
+        </div>
+      </section>
+
+      <section id="prior">
+        <h3>งานที่กินพื้นที่ไปแล้ว</h3>
+        <p>สี่หัวข้อย่อยที่นักศึกษาอาจคิดว่ายังว่างอยู่ แต่ปิดไปแล้วทั้งหมด:</p>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>หัวข้อ</th><th>สถานะ</th><th>ปิดโดย</th></tr></thead>
+            <tbody>
+              <tr><td>Repository routing</td><td><span class="chip chip-bad">ปิด</span></td><td>arXiv 2512.05908</td></tr>
+              <tr><td>“structural index ช่วยกว่า grep ไหม”</td><td><span class="chip chip-bad">ปิด</span></td><td>arXiv 2606.22417 — controlled ablation แบบมี p-value</td></tr>
+              <tr><td>Abstraction-level selection</td><td><span class="chip chip-bad">ปิด</span></td><td>RAPTOR, A-RAG</td></tr>
+              <tr><td>Query-complexity routing</td><td><span class="chip chip-bad">ปิด</span></td><td>Adaptive-RAG, RAGRouter-Bench</td></tr>
+              <tr><td>Token-level compression</td><td><span class="chip chip-bad">ปิด</span></td><td>LLMLingua-2, Provence</td></tr>
+              <tr><td>Chunking strategy tuning</td><td><span class="chip chip-warn">ไม่คุ้ม</span></td><td>cAST ได้ +4.3 Recall@5; JetBrains พบ line-based เทียบเท่า syntax-aware</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>ประเด็นเรื่อง premise ที่ต้องแก้:</strong> proposal อ้าง <i>Lost in the Middle</i>
+        เป็นฐาน ซึ่ง<strong>ยังจริงในปี 2026 แต่กลไกเปลี่ยนไปแล้ว</strong> — งานปัจจุบันชี้ว่า semantic
+        similarity และ distractor สำคัญกว่าตำแหน่ง และมีงานที่เสนอว่าปรากฏการณ์นี้เป็น emergent property
+        ของ training distribution คือ <i>เทรนให้หายได้</i> ควรเปลี่ยนไปอ้างงานที่ไม่หมดอายุเมื่อโมเดลเก่งขึ้น
+        บวกเหตุผลเรื่องต้นทุนและ latency แทน</p>
+      </section>
+
+      <section id="gaps">
+        <h3>ช่องว่างที่ยังเหลือจริง</h3>
+        <p>ตรวจสอบแล้วว่ายืนอยู่ แต่ต้องกรอบให้แม่น เพราะมีของที่เข้ามาใกล้:</p>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>ช่องว่าง</th><th>ความเหมาะกับคนเดียว</th><th>ข้อควรระวัง</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><b>Cross-repo name collision</b><br><span style="color:var(--muted);font-size:.8125rem">entity disambiguation</span></td>
+                <td><span class="chip chip-ok">ดีที่สุด</span></td>
+                <td>A-RAG และ DeepRepoQA ระบุตรงกันว่า entity confusion เป็น failure mode อันดับหนึ่ง แต่ไม่มีใครแก้</td>
+              </tr>
+              <tr>
+                <td><b>Multi-repo QA benchmark</b></td>
+                <td><span class="chip chip-warn">ระวัง</span></td>
+                <td>ไม่มีฝั่ง peer-reviewed จริง แต่ <b>CodeScaleBench</b> ของ Sourcegraph มี 370 tasks
+                    โดยส่วน Org 220 tasks ต้องใช้ organization-level navigation — แข่งวางตำแหน่งกับบริษัทที่มีทรัพยากรมากกว่า</td>
+              </tr>
+              <tr>
+                <td><b>Index staleness vs routing accuracy</b></td>
+                <td><span class="chip chip-warn">ใช้เวลาสูง</span></td>
+                <td>arXiv 2512.05908 ระบุเองว่ายังไม่ได้ทำ แต่ต้องรัน pipeline ข้ามช่วงเวลาหลายรอบ</td>
+              </tr>
+              <tr>
+                <td><b>Cost/accuracy Pareto ใน multi-repo</b></td>
+                <td><span class="chip chip-note">เป็นส่วนเสริม</span></td>
+                <td>เล็กเกินกว่าจะเป็น contribution เดี่ยว แต่ควรใส่เป็นผลรองของโครงงาน</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p><span class="chip chip-note">ตรวจแล้ว</span> ผมตรวจ <b>MULocBench</b> ซึ่งดูเผินๆ เหมือนจะปิดช่องว่างนี้ —
+        <strong>ไม่ปิด</strong> เพราะเป็น <i>multi-type</i> (ครอบคลุมไฟล์ที่ไม่ใช่โค้ด เช่น config และ docs)
+        ไม่ใช่ <i>multi-repo</i> เป็น 1,100 issues จาก 46 Python project ที่แยกกัน</p>
+      </section>
+
+      <section id="ask">
+        <h3>คำถามที่ควรถามนักศึกษาในการพบครั้งถัดไป</h3>
+        <p>เรียงตามลำดับที่ควรถาม — สามข้อแรกเป็นการทดสอบว่านักศึกษาอ่านงานที่มีอยู่มาจริงแค่ไหน
+        ก่อนจะไปถึงการปรับหัวข้อ:</p>
+        <ol class="qlist">
+          <li>
+            <q>ลองเปิด Cursor ให้ดูหน่อยว่ามันทำ multi-root workspace ไม่ได้จริงไหม</q>
+            <span class="why">ไม่ใช่การจับผิด แต่เป็นการสอนว่าข้ออ้างเรื่องช่องว่างต้องตรวจกับของจริงก่อนเขียนลงกระดาษเสมอ
+            และเป็นบทเรียนที่ติดตัวไปตลอด</span>
+          </li>
+          <li>
+            <q>อ่าน arXiv 2512.05908 แล้วบอกหน่อยว่างานของเราต่างจากเขาตรงไหน</q>
+            <span class="why">คำถามชี้ขาด ถ้าตอบไม่ได้แปลว่ายังไม่มีหัวข้อ ถ้าตอบได้แปลว่าเริ่มมองเห็นช่องว่างจริง</span>
+          </li>
+          <li>
+            <q>ถ้ามี UserService อยู่ใน 5 repo แล้วคนถามว่า “UserService จัดการ session ยังไง” เครื่องมือควรทำอะไร</q>
+            <span class="why">คำถามที่พาไปสู่หัวข้อใหม่โดยไม่ต้องบอกคำตอบ ให้เขาค้นพบปัญหา entity collision เอง</span>
+          </li>
+          <li>
+            <q>ถ้าทำแล้วผลออกมาว่าวิธีของเราไม่ช่วยเลย จะเขียนเล่มยังไง</q>
+            <span class="why">ทดสอบว่าเข้าใจเรื่อง negative result ไหม ถ้าไม่เข้าใจต้องสอน เพราะนี่คือกลไกที่ทำให้โครงงานนี้ไม่มีทางล้ม</span>
+          </li>
+          <li>
+            <q>ถ้าเดือนที่สองพบว่าชื่อชนกันน้อยมาก จะทำอะไรต่อ</q>
+            <span class="why">ฝึกให้คิดเรื่องจุด go/no-go และแผนสำรองตั้งแต่ก่อนเริ่ม ไม่ใช่ตอนที่สายไปแล้ว</span>
+          </li>
+        </ol>
+      </section>
+    </div>
+
+    <!-- ============ PART 2 ============ -->
+    <div class="part">
+      <div class="part-head">
+        <span class="part-num">ส่วนที่ 2</span>
+        <h2>โครงร่างโครงงานที่ปรับใหม่</h2>
+      </div>
+
+      <section id="thesis">
+        <h3>หัวข้อและข้ออ้าง</h3>
+        <div class="callout">
+          <span class="callout-label">ชื่อโครงงานที่เสนอ</span>
+          <p class="thesis" style="margin-bottom:var(--s3)">Cross-Repository Entity Disambiguation
+          for LLM Code Question Answering</p>
+          <p style="margin-bottom:0">ในระบบ polyrepo และ microservice สัญลักษณ์ชื่อเดียวกัน — <code>UserService</code>,
+          <code>Order</code>, <code>Config</code>, <code>handleRequest</code> — ปรากฏในหลาย repository
+          โดยมีความหมายต่างกัน retrieval คืนมาทั้งหมด แล้ว agent เอามาปนกันจนตอบผิด
+          <strong>โครงงานนี้วัดขนาดของปัญหาในระบบจริง เสนอวิธีแก้ระดับ component และวัดว่าช่วยได้จริงหรือไม่</strong></p>
+        </div>
+
+        <h4>สมมติฐานที่พิสูจน์ผิดได้</h4>
+        <div class="callout callout-ok">
+          <p style="margin-bottom:var(--s2)"><strong>H1</strong> — การทำ explicit cross-repo entity
+          disambiguation เพิ่มความถูกต้องของคำตอบบนคำถามที่ entity ชนกัน
+          เมื่อเทียบกับ hybrid retrieval baseline ที่ไม่จัดการการชน</p>
+          <p style="margin-bottom:0"><strong>ถ้าผลออกมาว่าไม่ช่วย โครงงานก็ยังสมบูรณ์</strong> —
+          เป็น negative result ที่ขัดกับสิ่งที่งานสองชิ้นคาดเดาไว้ จึงมีค่าพอเขียนเล่ม
+          นี่คือเหตุผลหลักที่เลือกหัวข้อนี้: นักศึกษาไม่มีทางส่งงานไม่ได้</p>
+        </div>
+
+        <h4>ทำไมข้อนี้รอด ในขณะที่ข้อเสนอเดิมไม่รอด</h4>
+        <p>เป็น contribution ระดับ <strong>component</strong> ไม่ใช่ระดับ <strong>ระบบ</strong> —
+        ไม่ต้องเอาชนะ Cursor หรือ Copilot ตัวต่อตัว ซึ่งคนทำคนเดียวไม่มีทางทำได้
+        แค่ต้องแสดงว่าเสียบชั้น disambiguation เข้าไปใน baseline ที่มีอยู่แล้วดีขึ้น</p>
+      </section>
+
+      <section id="scope">
+        <h3>ขอบเขต</h3>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>อยู่ในขอบเขต</th><th>ตัดออก และเหตุผล</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>วัด collision rate ด้วย tree-sitter</td>
+                <td><b>เขียน static analyzer เอง</b> — ไม่มีพื้น IR ใช้เวลาเกินคุ้ม</td>
+              </tr>
+              <tr>
+                <td>สร้างชุดประเมิน ~200 คำถาม</td>
+                <td><b>สร้าง code graph database</b> — LARGER แสดงว่าทำได้โดยไม่ต้องมี graph DB</td>
+              </tr>
+              <tr>
+                <td>ชั้น disambiguation เสียบบน agent ที่มีอยู่</td>
+                <td><b>สร้าง agent เต็มระบบเอง</b> — ความเสี่ยงข้อใหญ่ที่สุด อาจารย์ต้องคอยดึง</td>
+              </tr>
+              <tr>
+                <td>เปรียบเทียบกับ baseline สามตัว</td>
+                <td><b>เทรน embedding model เอง</b> — เกินขอบเขต ป.ตรี</td>
+              </tr>
+              <tr>
+                <td>วิเคราะห์สถิติแบบมี CI</td>
+                <td><b>จูน chunking strategy</b> — หลักฐานบอกว่าได้ผลน้อยมาก</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="corpus">
+        <h3>Corpus สองชั้น</h3>
+        <div class="callout callout-warn">
+          <span class="callout-label">กับดักที่ต้องเช็คก่อนเลือก</span>
+          <p style="margin-bottom:0">“microservice demo” ส่วนใหญ่อยู่ใน <strong>repo เดียว</strong> —
+          Train Ticket และ Google Online Boutique เป็น monorepo ที่มีหลาย service
+          <strong>จึงใช้กับโจทย์ cross-repo ไม่ได้</strong> ประเด็นนี้ถูกมองข้ามง่ายมาก
+          และถ้าพลาดจะเสียเวลาไปทั้งเดือน</p>
+        </div>
+
+        <h4>ชั้นที่ 1 · ควบคุมได้ ใช้ตอนพัฒนา</h4>
+        <p><strong>Sock Shop</strong> เป็นตัวเลือกหลัก เพราะเป็น polyrepo แท้ — แต่ละ service
+        แยก repository จริง (<code>front-end</code>, <code>catalogue</code>, <code>carts</code>,
+        <code>orders</code>, <code>payment</code>, <code>shipping</code>, <code>user</code>,
+        <code>queue-master</code>)</p>
+
+        <h4>ชั้นที่ 2 · ของจริง ใช้ตอนวัดผล</h4>
+        <p>GitHub organization ที่เป็น polyrepo แท้และมี type ชื่อซ้ำข้าม repo สูง:
+        <code>kubernetes</code> (kubernetes, api, apimachinery, client-go, kubectl), HashiCorp,
+        Grafana, Netflix OSS</p>
+
+        <div class="callout">
+          <span class="callout-label">ผลเชิงประจักษ์ชิ้นแรก · ทำก่อนอย่างอื่น</span>
+          <p style="margin-bottom:var(--s2)">ใช้ tree-sitter ดึงชื่อ top-level symbol ต่อ repo
+          แล้วหาชื่อที่ปรากฏใน ≥2 repo เพื่อตอบประโยคนี้:</p>
+          <p class="thesis" style="margin-bottom:0">“จากการสำรวจ N polyrepo organization พบว่า X%
+          ของชื่อสัญลักษณ์ระดับบนสุดชนกันข้าม repository ตั้งแต่ 2 แห่งขึ้นไป”</p>
+        </div>
+        <p>ประโยคเดียวนี้เป็นผลลัพธ์ที่ตีพิมพ์ได้ในตัวเอง และเป็นจุด go/no-go แรก —
+        <strong>ถ้าการชนเกิดน้อย ต้องเปลี่ยนหัวข้อตั้งแต่เดือนที่ 2 ไม่ใช่เดือนที่ 6</strong></p>
+      </section>
+
+      <section id="eval">
+        <h3>วิธีวัดผล</h3>
+
+        <h4>Metric สามชั้น</h4>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>ชั้น</th><th>ตัววัด</th></tr></thead>
+            <tbody>
+              <tr><td><b>หลัก</b></td><td>answer accuracy บนคำถามที่ entity ชน (LLM-as-judge)</td></tr>
+              <tr><td>component</td><td>entity resolution precision/recall, Repo-Recall@1, false-routing rate, abstention rate</td></tr>
+              <tr><td>ต้นทุน</td><td>tokens, USD, latency พร้อม cost–accuracy Pareto plot</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>ใช้พื้นสถิติของนักศึกษาให้เต็ม</h4>
+        <p>นักศึกษาเคยเรียนสถิติเบื้องต้นแต่ไม่มีพื้น IR — <strong>จุดแข็งนี้หาได้ยากใน senior project
+        และควรใช้ให้เต็ม เพราะ GPU server ทำให้รันซ้ำได้แทบฟรี</strong></p>
+        <ul>
+          <li>รัน <strong>≥3 seeds</strong> รายงาน <strong>confidence interval</strong> ไม่ใช่เลขเดี่ยว</li>
+          <li><strong>paired test</strong> ระหว่าง baseline กับวิธีที่เสนอ บนคำถามชุดเดียวกัน</li>
+          <li><strong>Cohen’s κ</strong> ระหว่าง LLM-as-judge กับ label ที่ตรวจเอง — StackRepoQA ตั้งเกณฑ์ไว้ที่ 0.78–0.87</li>
+        </ul>
+        <div class="callout callout-warn">
+          <p style="margin-bottom:0">ถ้า κ ต่ำ ต้องเลิกใช้ LLM-as-judge เป็น metric หลัก
+          <strong>ต้องเช็คก่อนใช้ ไม่ใช่หลังจากรันการทดลองทั้งหมดไปแล้ว</strong></p>
+        </div>
+
+        <h4>Control ที่ต้องมี</h4>
+        <p>ยืมจาก Agent Retrieval Bench: <strong>counterfactual wrong-repository controls</strong>
+        และ <strong>no-gold examples</strong> สำหรับวัด abstention — เพิ่มงานน้อยแต่ทำให้ผลน่าเชื่อถือขึ้นมาก
+        พร้อม base-commit freezing และ query sanitization กัน leakage</p>
+
+        <h4>Baseline · ของจริงทั้งหมด ไม่ต้องสร้างเอง</h4>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>#</th><th>Baseline</th><th>บทบาท</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>ripgrep + LLM</td><td>baseline โง่แต่แข็ง — หลักฐานยืนยันว่า agentic grep แข็งจริง</td></tr>
+              <tr><td class="num">2</td><td><code>flupkede/codesearch</code> MCP</td><td>hybrid RRF multi-repo ที่มีอยู่แล้ว คือคู่แข่งตัวจริง</td></tr>
+              <tr><td class="num">3</td><td>Claude Code + <code>--add-dir</code></td><td>ตัวแทน agent เชิงพาณิชย์</td></tr>
+              <tr><td class="num">4</td><td>Sourcebot</td><td>ถ้าเวลาเหลือเท่านั้น</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>การใช้ GPU server</h4>
+        <ul>
+          <li><strong>GPU</strong> → embedding model โลคัลและ LLM-as-judge — ปริมาณเรียกสูง ต้นทุนต่อครั้งต้องเป็นศูนย์</li>
+          <li><strong>API frontier model</strong> → ตัว agent เท่านั้น เรียกน้อยครั้งกว่ามาก คุมงบได้</li>
+          <li><strong>ห้ามใช้ local LLM เป็นตัว agent</strong> — โมเดลเปิดยังอ่อนกับงาน agentic tool-calling
+          จะทำให้ผลการทดลองวัดความอ่อนของโมเดล ไม่ได้วัดวิธีการ</li>
+        </ul>
+      </section>
+
+      <section id="plan">
+        <h3>แผน 8 เดือน</h3>
+        <p class="kicker" style="color:var(--muted);margin-bottom:var(--s2)">ภาคเรียนที่ 1</p>
+        <ol class="timeline">
+          <li>
+            <span class="month">เดือน 1</span>
+            <div>
+              <h4>อ่านวรรณกรรม + ปูพื้น IR</h4>
+              <p>BM25, recall@k, MRR, nDCG — กันเวลาไว้เต็มเดือนเพราะไม่มีพื้นฐานมาก่อน</p>
+              <span class="deliver">annotated bibliography + baseline ripgrep+LLM ที่รันได้</span>
+            </div>
+          </li>
+          <li>
+            <span class="month">เดือน 2</span>
+            <div>
+              <h4>เลือก corpus + วัด collision rate</h4>
+              <p>ตรวจก่อนว่าแต่ละ demo เป็น polyrepo จริงไหม แล้ววัดอัตราการชนของชื่อ · สัมภาษณ์ VoC 1 สัปดาห์</p>
+              <span class="deliver">ผลเชิงประจักษ์ชิ้นแรก</span>
+            </div>
+          </li>
+        </ol>
+        <div class="gate">
+          <span class="month">GATE 1</span>
+          <p><strong>collision rate ต้องไม่ต่ำจนไร้นัยสำคัญ</strong> — ถ้าต่ำ เปลี่ยนไปทำ contribution
+          แบบ benchmark ทันที ยังเหลือเวลาอีก 6 เดือน</p>
+        </div>
+        <ol class="timeline">
+          <li>
+            <span class="month">เดือน 3</span>
+            <div>
+              <h4>สร้างชุดประเมิน</h4>
+              <p>~200 คำถามที่พุ่งเป้า entity ที่ชน โดย ~100 ข้อตรวจด้วยมือ · เสริมด้วยคำถามธรรมชาติจาก issue/PR history</p>
+              <span class="deliver">dataset v1</span>
+            </div>
+          </li>
+          <li>
+            <span class="month">เดือน 4</span>
+            <div>
+              <h4>รัน baseline ทั้งสามตัว</h4>
+              <p>วัด baseline บน dataset พร้อมตรวจ Cohen’s κ ของ LLM-as-judge ก่อนใช้จริง</p>
+              <span class="deliver">สอบหัวข้อ + ตัวเลข baseline</span>
+            </div>
+          </li>
+        </ol>
+        <div class="gate">
+          <span class="month">GATE 2</span>
+          <p><strong>baseline ต้องตกจริงบนคำถามที่ entity ชน</strong> — ถ้า baseline ทำได้ดีอยู่แล้ว
+          แปลว่าไม่มี headroom เปลี่ยนไปทำ staleness study</p>
+        </div>
+
+        <p class="kicker" style="color:var(--muted);margin:var(--s4) 0 var(--s2)">ภาคเรียนที่ 2</p>
+        <ol class="timeline">
+          <li>
+            <span class="month">เดือน 5</span>
+            <div>
+              <h4>ออกแบบและสร้างชั้น disambiguation</h4>
+              <p>เสียบบน agent ที่มีอยู่ ไม่สร้างเอง</p>
+              <span class="deliver">เครื่องมือที่รันได้</span>
+            </div>
+          </li>
+          <li>
+            <span class="month">เดือน 6</span>
+            <div>
+              <h4>วัดผล + ablation + วิเคราะห์สถิติ</h4>
+              <p>3 seeds ขึ้นไป รายงาน CI และ paired test</p>
+              <span class="deliver">ตารางผลหลัก</span>
+            </div>
+          </li>
+        </ol>
+        <div class="gate">
+          <span class="month">GATE 3</span>
+          <p><strong>ถ้าวิธีที่เสนอไม่ชนะ baseline ไม่ต้องเปลี่ยนหัวข้อ</strong> —
+          รายงานเป็น negative result พร้อมวิเคราะห์สาเหตุ ยังเป็นโครงงานที่สมบูรณ์</p>
+        </div>
+        <ol class="timeline">
+          <li>
+            <span class="month">เดือน 7</span>
+            <div>
+              <h4>วิเคราะห์ failure + corpus ชั้นสอง</h4>
+              <p>รันบน organization จริงเพื่อยืนยันว่าผลไม่ได้จำกัดอยู่แค่ระบบตัวอย่าง</p>
+              <span class="deliver">ผลบนของจริง</span>
+            </div>
+          </li>
+          <li>
+            <span class="month">เดือน 8</span>
+            <div>
+              <h4>เขียนเล่มและเตรียมสอบ</h4>
+              <p>เขียนข้อจำกัดของงานให้ตรงไปตรงมา รวมถึงข้อจำกัดของ VoC</p>
+              <span class="deliver">เล่มสมบูรณ์</span>
+            </div>
+          </li>
+        </ol>
+
+        <div class="callout callout-ok">
+          <span class="callout-label">ขอบเขตขั้นต่ำที่ยังจบได้</span>
+          <p style="margin-bottom:0">ถ้าทุกอย่างช้ากว่าแผน <strong>collision measurement study +
+          evaluation set + baseline comparison</strong> เพียงสามอย่างนี้ก็เป็นโครงงานที่สมบูรณ์แล้ว
+          เพราะเป็นงานวัดผลที่ยังไม่มีใครทำ ส่วนชั้น disambiguation เป็นส่วนต่อยอด</p>
+        </div>
+      </section>
+
+      <section id="risk">
+        <h3>ความเสี่ยงและแผนสำรอง</h3>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>ความเสี่ยง</th><th>ตรวจพบเมื่อ</th><th>แผนสำรอง</th></tr></thead>
+            <tbody>
+              <tr><td>ชื่อชนกันน้อยเกินไป</td><td class="num">เดือน 2</td><td>เปลี่ยนเป็น benchmark contribution</td></tr>
+              <tr><td>baseline เก่งอยู่แล้ว ไม่มี headroom</td><td class="num">เดือน 4</td><td>เปลี่ยนเป็น staleness study</td></tr>
+              <tr><td>LLM-as-judge ไม่น่าเชื่อถือ (κ ต่ำ)</td><td class="num">เดือน 4</td><td>ใช้ retrieval metric เป็นหลักแทน</td></tr>
+              <tr><td><b>ไหลไปสร้าง agent เต็มระบบ</b></td><td>ตลอดเวลา</td><td><b>เสี่ยงที่สุด</b> — นักศึกษาที่อยากสร้างของเจ๋งมักตกหลุมนี้ อาจารย์ต้องคอยดึงกลับ</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>ข้อจำกัดที่ต้องเขียนลงเล่มตรงๆ</h4>
+        <p>นักศึกษาปีสี่ที่ยังไม่เคยทำงาน<strong>ไม่ใช่ตัวแทน</strong>ของ developer ที่ทำงานกับ polyrepo
+        ระดับองค์กร การสัมภาษณ์ VoC จึงใช้เป็น motivating evidence ได้ แต่ใช้เป็นหลักฐานสนับสนุนผลไม่ได้
+        <strong>การเขียนข้อจำกัดนี้เองแสดงวุฒิภาวะเชิงวิจัย และมักได้คะแนนจากกรรมการ</strong></p>
+      </section>
+
+      <section id="bib">
+        <h3>บรรณานุกรมตั้งต้น</h3>
+        <div class="legend">
+          <span><span class="chip chip-ok">ตรวจแล้ว</span> เปิดอ่าน abstract ยืนยันด้วยตนเอง</span>
+          <span><span class="chip chip-warn">ยังไม่ตรวจ</span> ได้จากการค้นของเอเจนต์ ควรตรวจก่อนอ้างในเล่ม</span>
+        </div>
+
+        <h4>ต้องอ่านก่อนอย่างอื่น</h4>
+        <ul class="bib">
+          <li>
+            <div class="bib-top">
+              <span class="bib-id">arXiv 2512.05908</span>
+              <span class="chip chip-ok">ตรวจแล้ว</span>
+            </div>
+            <div class="bib-title">Natural Language Summarization Enables Multi-Repository Bug Localization
+            by LLMs in Microservice Architectures</div>
+            <div class="bib-note">Rafiei Oskooei, Yukcu, Bozoglan, Aktas · 5 ธ.ค. 2025 · <b>งานที่ใกล้ข้อเสนอเดิมที่สุด</b>
+            two-phase repo routing บน 46 repo / 1.1M LOC ได้ Pass@10 0.82 · น่าสนใจว่าเขาเลี่ยง embedding RAG
+            โดยใช้ NL-to-NL search แทน cross-modal retrieval</div>
+          </li>
+          <li>
+            <div class="bib-top">
+              <span class="bib-id">arXiv 2606.22417</span>
+              <span class="chip chip-ok">ตรวจแล้ว</span>
+            </div>
+            <div class="bib-title">Code Isn’t Memory: A Structural Codebase Index Inside a Coding Agent</div>
+            <div class="bib-note">Bhola, Krishnan, Kurmala, NS · 21 มิ.ย. 2026 · controlled ablation
+            สามอาร์ม สาม seed บน SWE-PolyBench Verified และ SWE-bench Pro · ประเด็นสำคัญคือ index
+            <b>ไม่แพงขึ้น</b> — cost ต่อ solve ต่ำลงด้วยซ้ำ
+            <br><span class="chip chip-warn">ข้อควรระวัง</span> ตัวเลข acc@5 44.3%→84.5% ที่ถูกอ้างถึง
+            <b>ไม่ปรากฏใน abstract</b> ห้ามอ้างจนกว่าจะเปิดฉบับเต็ม</div>
+          </li>
+          <li>
+            <div class="bib-top">
+              <span class="bib-id">arXiv 2605.16352</span>
+              <span class="chip chip-ok">ตรวจแล้ว</span>
+            </div>
+            <div class="bib-title">LARGER: Lexically Anchored Repository Graph Exploration and Retrieval</div>
+            <div class="bib-note">Hu, Su, Zhao, Zhu, Haque · 8 พ.ค. 2026 · +13.9 Acc@5 บน LocBench
+            <b>โดยไม่ต้องมี external graph database</b> — เป็นแบบอย่างทางสถาปัตยกรรมที่เหมาะกับข้อจำกัดของนักศึกษาที่สุด</div>
+          </li>
+        </ul>
+
+        <h4>Benchmark และการวัดผล</h4>
+        <ul class="bib">
+          <li>
+            <div class="bib-top"><span class="bib-id">CodeScaleBench</span><span class="chip chip-ok">ตรวจแล้ว</span></div>
+            <div class="bib-title">Sourcegraph · living benchmark 370 tasks</div>
+            <div class="bib-note">ส่วน Org 220 tasks ต้องใช้ organization-level navigation ·
+            Sourcegraph รายงานเองว่าช่องว่างประสิทธิภาพบน multi-repo กว้างกว่า single-repo —
+            <b>เป็นทั้งหลักฐานสนับสนุนปัญหา และคู่แข่งของ contribution แบบ benchmark</b></div>
+          </li>
+          <li>
+            <div class="bib-top"><span class="bib-id">MULocBench</span><span class="chip chip-ok">ตรวจแล้ว</span></div>
+            <div class="bib-title">A Benchmark for Localizing Code and Non-Code Issues in Software Projects</div>
+            <div class="bib-note">1,100 issues จาก 46 Python project · <b>multi-type ไม่ใช่ multi-repo</b>
+            จึงไม่ปิดช่องว่าง แต่ต้องอ้างเพื่อแสดงว่าตรวจแล้ว</div>
+          </li>
+          <li>
+            <div class="bib-top"><span class="bib-id">SWE-QA</span><span class="chip chip-warn">ยังไม่ตรวจ</span></div>
+            <div class="bib-title">576 pairs / 12 repos · ACL 2026 Findings</div>
+            <div class="bib-note">ใช้ pipeline ของเขาเป็นแบบในการสร้างคำถาม (taxonomy-seed → template) ·
+            เขาจำกัดข้ออ้าง novelty ไว้ที่ <i>within a repository</i> ซึ่งเป็นประโยคที่ควรยกมาอ้างตอนวางตำแหน่งงานตัวเอง</div>
+          </li>
+          <li>
+            <div class="bib-top"><span class="bib-id">CoReQA · CodeRepoQA · StackRepoQA</span><span class="chip chip-warn">ยังไม่ตรวจ</span></div>
+            <div class="bib-title">benchmark ฝั่ง repo-level QA ที่ต้องอ้างให้ครบ</div>
+            <div class="bib-note">CoReQA 176 repos · CodeRepoQA 585,687 entries / 30 repos ·
+            StackRepoQA 1,318 คำถาม / 134 Java projects พร้อมเกณฑ์ Cohen’s κ 0.78–0.87</div>
+          </li>
+          <li>
+            <div class="bib-top"><span class="bib-id">Agent Retrieval Bench</span><span class="chip chip-warn">ยังไม่ตรวจ</span></div>
+            <div class="bib-title">arXiv 2607.24882</div>
+            <div class="bib-note"><b>เอา control มาใช้ซ้ำได้ตรงๆ</b> — 32 counterfactual wrong-repository controls
+            และ 50 no-gold examples</div>
+          </li>
+        </ul>
+
+        <h4>Retrieval และ long-context</h4>
+        <ul class="bib">
+          <li>
+            <div class="bib-top"><span class="bib-id">arXiv 2510.05381</span><span class="chip chip-warn">ยังไม่ตรวจ</span></div>
+            <div class="bib-title">Context Length Alone Hurts LLM Performance Despite Perfect Retrieval</div>
+            <div class="bib-note"><b>ใช้อ้างแทน Lost in the Middle</b> — เป็นเหตุผลที่ไม่หมดอายุเมื่อโมเดลเก่งขึ้น</div>
+          </li>
+          <li>
+            <div class="bib-top"><span class="bib-id">CORE-Bench · SWE-Explore</span><span class="chip chip-warn">ยังไม่ตรวจ</span></div>
+            <div class="bib-title">arXiv 2606.11864 · arXiv 2606.07297</div>
+            <div class="bib-note">ตัวเลขที่ใช้สนับสนุนว่า <b>recall คือปัญหา ไม่ใช่ speed</b> —
+            embedding ตกจาก NDCG@10 71.7 เหลือ 20.3 · agentic explorer HitRegion 0.51–0.53 vs BM25 0.07–0.12</div>
+          </li>
+          <li>
+            <div class="bib-top"><span class="bib-id">Cursor engineering blog</span><span class="chip chip-warn">ยังไม่ตรวจ</span></div>
+            <div class="bib-title">A/B production results, พ.ย. 2025 · semantic search +12.5% accuracy</div>
+            <div class="bib-note">หลักฐานฝั่งอุตสาหกรรมที่มีตัวเลขจริง ใช้โต้ข้ออ้างว่า agentic grep ชนะขาด</div>
+          </li>
+        </ul>
+
+        <h4>เครื่องมือที่ต้องใช้เป็น baseline</h4>
+        <ul class="bib">
+          <li>
+            <div class="bib-top"><span class="bib-id">flupkede/codesearch</span><span class="chip chip-ok">ตรวจแล้ว</span></div>
+            <div class="bib-title">multi-repo semantic code search MCP server · Rust · 73 stars</div>
+            <div class="bib-note">repo groups, RRF (vector + BM25), tree-sitter AST chunking 17+ ภาษา,
+            รันโลคัลไม่ต้องใช้ GPU, federation ข้าม instance · <b>คือคู่แข่งตัวจริงที่ต้องเอาชนะ</b></div>
+          </li>
+          <li>
+            <div class="bib-top"><span class="bib-id">Sock Shop</span><span class="chip chip-warn">ยังไม่ตรวจ</span></div>
+            <div class="bib-title">corpus ชั้นที่ 1 · ECASE@ICSE 2017</div>
+            <div class="bib-note"><b>ต้องยืนยันด้วยตาว่าแต่ละ service ยังแยก repository อยู่จริง</b>
+            ก่อนลงมือ — นี่คืองานชิ้นแรกของเดือนที่ 2</div>
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <footer>
+      <p>เอกสารนี้สร้างจากการค้นคว้าสี่สายขนานกัน แล้วตรวจสอบข้ออ้างที่สำคัญที่สุดซ้ำด้วยการเปิดอ่านต้นทางโดยตรง
+      รายการที่ติดป้าย <span class="chip chip-warn">ยังไม่ตรวจ</span> มาจากผลการค้นที่ยังไม่ได้เปิดยืนยัน
+      ควรตรวจก่อนนำไปอ้างในเล่ม · บันทึกการตัดสินใจทั้งหมดอยู่ใน
+      <code>.scratch/multirepo-qa-senior-project/</code></p>
+    </footer>
+
+  </main>
+</div>

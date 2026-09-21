@@ -1,0 +1,1105 @@
+<style>
+/* ============================================================
+   Wireframe ฝั่งอาจารย์ — ticket 19 · รอบที่ 3
+   ตั้งใจให้เป็น "ความละเอียดต่ำ" ตามที่ ticket สั่ง: โครงกล่องและลำดับข้อมูล ไม่ลงสี
+   สีที่ใช้มีสองชุดเท่านั้น และทั้งคู่เป็นเนื้อหา ไม่ใช่การตกแต่ง —
+   สีหมุด = จุดที่ต้องตัดสินใจ · สีจุดสถานะ = สถานะการตรวจ ซึ่งอาจารย์ขอมาเอง
+   ============================================================ */
+:root{
+  --bg:#FAF9F6; --panel:#FFFFFF; --sunk:#F2F0EA;
+  --ink:#1B1A16; --ink2:#6B675D; --ink3:#9A9689;
+  --line:#D5D2C8; --line2:#E9E6DE;
+  --accent:#A8481A; --accent-bg:#F8EEE7; --accent-line:#E0BFAA;
+  --ok:#3D6647; --warn:#8A6A1F; --stop:#8C3A2E;
+  --mono:"Cascadia Mono",Consolas,"DejaVu Sans Mono",monospace;
+  --ui:"Segoe UI","Leelawadee UI","Noto Sans Thai",Tahoma,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#151519; --panel:#1C1C21; --sunk:#232329;
+    --ink:#E9E6E0; --ink2:#9C978D; --ink3:#6C6860;
+    --line:#33333A; --line2:#26262C;
+    --accent:#E5A272; --accent-bg:#2B211B; --accent-line:#5A4335;
+    --ok:#79A886; --warn:#C7A44E; --stop:#D08A7C;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151519; --panel:#1C1C21; --sunk:#232329;
+  --ink:#E9E6E0; --ink2:#9C978D; --ink3:#6C6860;
+  --line:#33333A; --line2:#26262C;
+  --accent:#E5A272; --accent-bg:#2B211B; --accent-line:#5A4335;
+  --ok:#79A886; --warn:#C7A44E; --stop:#D08A7C;
+}
+:root[data-theme="light"]{
+  --bg:#FAF9F6; --panel:#FFFFFF; --sunk:#F2F0EA;
+  --ink:#1B1A16; --ink2:#6B675D; --ink3:#9A9689;
+  --line:#D5D2C8; --line2:#E9E6DE;
+  --accent:#A8481A; --accent-bg:#F8EEE7; --accent-line:#E0BFAA;
+  --ok:#3D6647; --warn:#8A6A1F; --stop:#8C3A2E;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);
+  font-size:14px;line-height:1.6;padding-bottom:64px}
+h1,h2,h3{margin:0;font-weight:650;text-wrap:balance}
+.mono{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em}
+
+/* ---------- โครงหน้า ---------- */
+.wrap{display:grid;grid-template-columns:228px minmax(0,1fr) 316px;gap:0;
+  min-height:100vh;align-items:start}
+@media(max-width:1080px){.wrap{grid-template-columns:1fr}}
+
+/* ---------- รางซ้าย: การเดินทางของอาจารย์ ---------- */
+.rail{border-right:1px solid var(--line);padding:20px 0 40px;position:sticky;top:0;
+  align-self:start;max-height:100vh;overflow:auto}
+@media(max-width:1080px){.rail{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line)}}
+.rail h1{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);
+  padding:0 18px;margin-bottom:14px}
+.phase{padding:15px 18px 5px;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--ink3);border-top:1px solid var(--line2);margin-top:8px}
+.phase:first-of-type{border-top:0;margin-top:0}
+.step{display:grid;grid-template-columns:22px 1fr;gap:9px;align-items:baseline;
+  padding:7px 18px;cursor:pointer;border-left:2px solid transparent;color:var(--ink2)}
+.step:hover{background:var(--sunk)}
+.step.on{border-left-color:var(--accent);color:var(--ink);background:var(--sunk)}
+.step .no{font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.step.on .no{color:var(--accent)}
+.step .tt{font-size:13px;line-height:1.35}
+.step .rq{display:block;font-size:11px;color:var(--ink3);margin-top:2px}
+.step .nw{display:inline-block;font-size:10px;border:1px solid var(--accent-line);
+  color:var(--accent);padding:0 4px;margin-left:5px;vertical-align:1px}
+.railnote{padding:16px 18px 0;margin-top:14px;border-top:1px solid var(--line2);
+  font-size:11.5px;color:var(--ink3);line-height:1.65}
+
+/* ---------- กลาง: ตัว wireframe ---------- */
+.main{padding:24px 30px 60px;min-width:0}
+.hd{margin-bottom:4px;font-size:19px}
+.sub{color:var(--ink2);margin-bottom:20px;max-width:64ch}
+
+.wf{background:var(--panel);border:1px solid var(--line);padding:0;overflow:hidden}
+.wf + .wf{margin-top:18px}
+.wfbar{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line2);
+  background:var(--sunk);font-size:12.5px;color:var(--ink2)}
+.wfbar b{color:var(--ink);font-weight:600}
+.wfbody{padding:16px}
+.spacer{flex:1}
+
+/* กล่องเปล่าแบบ wireframe */
+.box{border:1px solid var(--line);padding:12px}
+.dash{border:1px dashed var(--line)}
+.ph{background:var(--line2);height:9px;border-radius:1px}
+.ph.s{height:7px}
+.stack{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grow{flex:1;min-width:0}
+.lbl{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin-bottom:5px}
+.fld{border:1px solid var(--line);padding:7px 9px;font-size:13px;color:var(--ink2);background:transparent}
+.fld.on{color:var(--ink);border-color:var(--ink3)}
+.btnw{border:1px solid var(--line);padding:6px 12px;font-size:12.5px;color:var(--ink2);display:inline-block}
+.btnw.pri{border-color:var(--ink);color:var(--ink);font-weight:600}
+.chip{border:1px solid var(--line);padding:2px 8px;font-size:11.5px;color:var(--ink2);border-radius:11px}
+.chip.on{border-color:var(--accent-line);background:var(--accent-bg);color:var(--accent)}
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{text-align:left;font-weight:600;color:var(--ink2);padding:7px 9px;border-bottom:1px solid var(--line);
+  font-size:11px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.tbl td{padding:7px 9px;border-bottom:1px solid var(--line2);vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.num{font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+.dim{color:var(--ink3);font-size:12px}
+.hint{font-size:12px;color:var(--ink2);margin-top:9px;padding-left:11px;border-left:2px solid var(--line)}
+
+/* หมุดจุดตัดสินใจ */
+.pin{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;
+  padding:0 4px;border-radius:9px;background:var(--accent-bg);color:var(--accent);
+  border:1px solid var(--accent-line);font-family:var(--mono);font-size:10.5px;
+  cursor:pointer;vertical-align:middle;margin-left:5px;font-weight:600}
+.pin:hover,.pin.on{background:var(--accent);color:var(--panel);border-color:var(--accent)}
+
+/* ---------- ขวา: จุดที่ต้องตัดสินใจ ---------- */
+.notes{border-left:1px solid var(--line);padding:24px 20px 60px;position:sticky;top:0;
+  align-self:start;max-height:100vh;overflow:auto}
+@media(max-width:1080px){.notes{position:static;max-height:none;border-left:0;border-top:1px solid var(--line)}}
+.notes h2{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:14px}
+.note{padding:11px 12px;border:1px solid var(--line2);margin-bottom:10px;font-size:12.5px;line-height:1.6}
+.note.on{border-color:var(--accent-line);background:var(--accent-bg)}
+.note .nh{display:flex;gap:7px;align-items:baseline;margin-bottom:4px}
+.note .nn{font-family:var(--mono);font-size:10.5px;color:var(--accent);font-weight:600}
+.note .nt{font-weight:600}
+.note .nb{color:var(--ink2)}
+.note .src{display:inline-block;margin-top:6px;font-family:var(--mono);font-size:10.5px;color:var(--ink3)}
+.note.settled{border-left:2px solid var(--ok)}
+.note.settled .nn{color:var(--ok)}
+
+/* ---------- จุดสถานะการตรวจ ---------- */
+.st{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink2);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--line)}
+.dot.done{background:var(--ok)}
+.dot.wait{background:var(--warn)}
+.dot.open{background:var(--accent)}
+.dot.manual{background:transparent;border:1px solid var(--ink3)}
+.dot.none{background:transparent;border:1px dashed var(--line)}
+tr.unset td{background:repeating-linear-gradient(135deg,transparent,transparent 5px,
+  var(--line2) 5px,var(--line2) 6px)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;padding-top:10px;
+  border-top:1px solid var(--line2)}
+
+/* ---------- ตารางสิทธิ์ ---------- */
+.perm{width:100%;border-collapse:collapse;font-size:12.5px}
+.perm th{text-align:left;font-weight:600;color:var(--ink2);padding:7px 9px;
+  border-bottom:1px solid var(--line);font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+.perm th.c,.perm td.c{text-align:center;width:96px}
+.perm td{padding:7px 9px;border-bottom:1px solid var(--line2)}
+.perm .y{color:var(--ok);font-weight:650}
+.perm .n{color:var(--stop);font-weight:650}
+.perm tr:last-child td{border-bottom:0}
+
+/* ---------- rubric variants ---------- */
+.rgrid{display:grid;gap:1px;background:var(--line2);border:1px solid var(--line);font-size:11.5px}
+.rgrid > div{background:var(--panel);padding:7px 8px}
+.rgrid .rh{background:var(--sunk);font-weight:600;font-size:10.5px;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--ink2)}
+.rgrid .rc{color:var(--ink2);line-height:1.5}
+.rgrid .rc.empty{color:var(--ink3);font-style:italic}
+.wizstep{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.wizstep .ws{border:1px solid var(--line);padding:3px 9px;font-size:11.5px;color:var(--ink3)}
+.wizstep .ws.on{border-color:var(--ink);color:var(--ink);font-weight:600}
+.wizstep .ws.done{color:var(--ink2)}
+.exthumb{border:1px solid var(--line);height:64px;display:flex;align-items:center;
+  justify-content:center;font-size:19px;background:var(--sunk)}
+
+/* ---------- แถบล่าง ---------- */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;align-items:center;gap:10px;
+  padding:9px 16px;background:var(--panel);border-top:1px solid var(--line);font-size:12.5px;flex-wrap:wrap}
+.bar b{font-weight:650}
+.bar .vb{border:1px solid var(--line);padding:4px 11px;cursor:pointer;color:var(--ink2);
+  background:transparent;font-family:inherit;font-size:12.5px}
+.bar .vb.on{border-color:var(--ink);color:var(--ink);font-weight:650}
+.bar .k{font-family:var(--mono);font-size:10.5px;color:var(--ink3);border:1px solid var(--line2);
+  padding:1px 5px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(prefers-reduced-motion:no-preference){.note{transition:background .12s,border-color .12s}}
+</style>
+
+<div class="wrap">
+  <nav class="rail" id="rail"></nav>
+  <main class="main" id="main"></main>
+  <aside class="notes" id="notes"></aside>
+</div>
+<div class="bar" id="bar"></div>
+
+<script>
+/* ============================================================
+   ข้อมูลตัวอย่าง — วิชา UX/UI ภาค 1/2569
+   รอบที่ 3 — หลังอาจารย์ตอบคำถามครบทั้ง 6 ข้อ (6 ส.ค. 69)
+   ============================================================ */
+const esc = s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const P = n=>`<span class="pin" data-pin="${n}">${n}</span>`;
+const ph = (w,c)=>`<div class="ph ${c||""}" style="width:${w}"></div>`;
+const dot = (k,txt)=>`<span class="st"><span class="dot ${k}"></span>${esc(txt)}</span>`;
+
+const S = {i:0, variant:"B", pin:null};
+
+/* ============================================================
+   01 — รายวิชาทั้งหมด
+   ============================================================ */
+const SC1 = {
+  t:"รายวิชาของฉัน", phase:"ก่อนเปิดเทอม",
+  sub:"จุดเริ่มต้นของทุกเทอม คำถามที่หน้าจอนี้ต้องตอบให้ได้คือ “เปิดเทอมใหม่แล้วต้องกรอกอะไรใหม่บ้าง”",
+  rq:"โจทย์ข้อ 1, 3, 14",
+  body:()=>`
+  <div class="wf">
+    <div class="wfbar"><b>รายวิชาของฉัน</b><div class="spacer"></div>
+      <span class="chip on">1/2569</span><span class="chip">2/2569</span>
+      <span class="chip">ทั้งหมด</span>${P(1)}</div>
+    <div class="wfbody">
+      <div class="scroll"><table class="tbl">
+        <tr><th>รหัส / ชื่อวิชา</th><th>ภาค</th><th class="num">นศ.</th><th class="num">กิจกรรมประเมิน</th>
+          <th>สถานะ</th><th></th></tr>
+        <tr><td><b>06016315</b> · การออกแบบส่วนติดต่อผู้ใช้</td><td>1/2569</td><td class="num">48</td>
+          <td class="num">21</td><td>กำลังสอน</td><td><span class="btnw">เปิด</span></td></tr>
+        <tr><td><b>06016315</b> · การออกแบบส่วนติดต่อผู้ใช้</td><td>2/2568</td><td class="num">44</td>
+          <td class="num">19</td><td>ปิดแล้ว</td>
+          <td><span class="btnw">คัดลอกไปเทอมใหม่</span>${P(2)}</td></tr>
+        <tr><td>${ph("62%")}</td><td>${ph("70%","s")}</td><td>${ph("50%","s")}</td>
+          <td>${ph("50%","s")}</td><td>${ph("70%","s")}</td><td></td></tr>
+      </table></div>
+      <div class="row" style="margin-top:14px">
+        <span class="btnw pri">+ สร้างรายวิชาใหม่</span>
+        <span class="dim">หรือคัดลอกจากเทอมก่อนเพื่อไม่ต้องตั้งค่าใหม่ทั้งหมด</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>คัดลอก 06016315 · 2/2568 → 1/2569</b><span class="dim">— ป๊อปอัป</span>
+      <div class="spacer"></div><span class="chip on">โจทย์ข้อ 14 · รับเข้าแล้ว</span></div>
+    <div class="wfbody">
+      <div class="lbl">คัดลอกไป — โครงของวิชา</div>
+      <div class="row" style="margin-bottom:10px">
+        <span class="chip on">✓ CLO ทั้ง 5 ข้อ และการผูก PLO</span>
+        <span class="chip on">✓ rubric ทั้ง 12 ชุด</span>
+        <span class="chip on">✓ ตารางสัปดาห์ · หัวข้อ + กิจกรรมประเมิน</span>
+        <span class="chip on">✓ สัดส่วนคะแนนและเกณฑ์ตัดเกรด</span>
+      </div>
+      <div class="lbl">คัดลอกไป — ของที่สะสมมาทั้งเทอมที่แล้ว${P(3)}</div>
+      <div class="row" style="margin-bottom:10px">
+        <span class="chip on">✓ ตัวอย่างงาน 🥇🥈🥉 ที่ปักไว้</span>
+        <span class="chip on">✓ ผลการปรับจูน AI ทั้งเทอม</span>
+        <span class="chip on">✓ คลังประโยค feedback</span>
+      </div>
+      <div class="lbl">ไม่คัดลอก</div>
+      <div class="row">
+        <span class="chip">✕ รายชื่อนักศึกษา</span>
+        <span class="chip">✕ งานที่ส่ง และคะแนนทั้งหมด</span>
+        <span class="chip">✕ รายชื่อ TA</span>
+        <span class="chip">✕ <b>วันกำหนดส่ง — ล้างทั้งหมด</b>${P(4)}</span>
+      </div>
+      <div class="hint">rubric ที่คัดลอกมาเป็น <b>เวอร์ชันใหม่ที่แยกจากของเดิม</b> ไม่ใช่ตัวเดียวกัน —
+        แก้ในเทอมนี้ต้องไม่กระทบคะแนนที่ตรวจไปแล้วในเทอมก่อน</div>
+    </div>
+  </div>`,
+  notes:[
+    {t:"ภาคการศึกษาเป็นตัวกรอง ไม่ใช่โฟลเดอร์",
+     b:"ถ้าทำเป็นโฟลเดอร์ อาจารย์จะเทียบข้ามเทอมไม่ได้ ซึ่งเป็นสิ่งที่ต้องทำแน่ ๆ ตอนดูว่าเกณฑ์เข้มขึ้นหรือหลวมลง",
+     src:"โจทย์ข้อ 3"},
+    {t:"“คัดลอกไปเทอมใหม่” รับเป็นโจทย์ข้อใหม่แล้ว", settled:true,
+     b:"ถ้าไม่มี อาจารย์ต้องกรอก CLO 5 ข้อ + rubric 12 ชุด ใหม่ทุกเทอม ซึ่งเป็นเหตุผลที่คนเลิกใช้ระบบแบบนี้ — อาจารย์รับเข้าเป็นฟีเจอร์เมื่อ 6 ส.ค. 69 จึงกลายเป็นโจทย์ข้อที่ 14",
+     src:"เพิ่มจากโจทย์ 13 ข้อเดิม"},
+    {t:"ตัดสินแล้ว: การปรับจูน AI ข้ามเทอมไปด้วย", settled:true,
+     b:"อาจารย์เลือกให้คัดลอกทั้งตัวอย่างงานที่ปักไว้ ผลการปรับจูน และคลังประโยค feedback — แปลว่าระบบสะสมความรู้ข้ามเทอมได้จริง แต่ตามมาด้วยข้อบังคับฝั่งวิจัย: เทอมที่ 2 ต้องวัดเทียบกับ “ตัวที่ยกมา” ไม่ใช่ตัวเปล่า และชุดทดสอบของเทอมใหม่ต้องเป็นงานที่ระบบไม่เคยเห็น",
+     src:"อาจารย์ตอบ 6 ส.ค. 69 · กระทบ ticket 15, 16"},
+    {t:"ตัดสินแล้ว: กำหนดส่งถูกล้างทิ้งเสมอ", settled:true,
+     b:"ปฏิทินแต่ละเทอมไม่ตรงกัน วันที่จากเทอมก่อนจึงผิดแน่นอน 100% การคัดลอกวันมาแล้วให้อาจารย์ไล่แก้ อันตรายกว่าการเว้นว่างไว้ เพราะวันที่ผิดที่ดูเหมือนถูกจะไม่มีใครทันสังเกต",
+     src:"ผลจากการตัดสินเรื่องคัดลอก"},
+  ]
+};
+
+/* ============================================================
+   02 — ตั้งค่ารายวิชา (หน้าจอใหม่ · อาจารย์ขอมา)
+   ============================================================ */
+const SC2 = {
+  t:"ตั้งค่ารายวิชา", isNew:true,
+  sub:"หน้าที่หายไปทั้งหน้าใน wireframe รอบก่อน — เป็นที่อยู่ของค่าระดับวิชาที่หน้าจออื่นทั้งหมดยืมไปใช้",
+  rq:"โจทย์ข้อ 1, 11",
+  body:()=>`
+  <div class="wf">
+    <div class="wfbar"><b>สัดส่วนคะแนนของรายวิชา</b><div class="spacer"></div>
+      <span class="chip on">รวม 100%</span>${P(1)}</div>
+    <div class="wfbody">
+      <div class="scroll"><table class="tbl">
+        <tr><th>หมวดคะแนน</th><th class="num">น้ำหนัก</th><th class="num">กิจกรรมที่อยู่ในหมวดนี้</th>
+          <th>ระบบรับไฟล์และตรวจให้ไหม</th></tr>
+        <tr><td>งานรายสัปดาห์</td><td class="num">40%</td><td class="num">9 ชิ้น</td>
+          <td>${dot("done","รับไฟล์ · AI ช่วยตรวจ")}</td></tr>
+        <tr><td>โครงงานปลายภาค</td><td class="num">30%</td><td class="num">1 ชิ้น</td>
+          <td>${dot("done","รับไฟล์ · AI ช่วยตรวจ")}</td></tr>
+        <tr><td>สอบกลางภาค</td><td class="num">15%</td><td class="num">1 ครั้ง</td>
+          <td>${dot("manual","กรอกคะแนนเอง")}${P(2)}</td></tr>
+        <tr><td>สอบปลายภาค</td><td class="num">15%</td><td class="num">1 ครั้ง</td>
+          <td>${dot("manual","กรอกคะแนนเอง")}</td></tr>
+      </table></div>
+      <div class="hint">อาจารย์ตัดสินแล้วว่า <b>ระบบเก็บคะแนนครบทั้งวิชา</b> ไม่ใช่เฉพาะงานที่ AI ตรวจ —
+        ถ้าเก็บไม่ครบ CLO จะสะท้อนไม่ครบ และจะออกเกรดจริงไม่ได้ (โจทย์ข้อ 11)</div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>นโยบายส่งช้า · ค่าตั้งต้นของรายวิชา</b><div class="spacer"></div>
+      <span class="dim">ชิ้นงานแต่ละชิ้น override ได้</span>${P(3)}</div>
+    <div class="wfbody stack">
+      <div class="row">
+        <div style="width:210px"><div class="lbl">หักวันละ</div>
+          <div class="fld on">10% ของคะแนนเต็ม</div></div>
+        <div style="width:210px"><div class="lbl">หักแล้วเหลือ ≤ 0</div>
+          <div class="fld on">ให้ 1 คะแนน</div></div>
+        <div style="width:210px"><div class="lbl">ช้าเกิน</div>
+          <div class="fld on">3 วัน = 0 และไม่เรียก AI</div></div>
+      </div>
+      <div class="hint">ทั้งบล็อกนี้ <b>ไม่ผ่าน AI เลย</b> เป็นเลขคณิตล้วน — เขียนเป็นกฎที่ทดสอบได้
+        และเป็นเหตุผลที่มันต้องอยู่คนละชั้นกับ rubric</div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>เกณฑ์ตัดเกรด</b><div class="spacer"></div>
+      <span class="dim">ใช้ตอนออกเกรดจากสมุดคะแนน (หน้าจอ 10)</span></div>
+    <div class="wfbody">
+      <div class="row">
+        <span class="chip">A ≥ 80</span><span class="chip">B+ ≥ 75</span><span class="chip">B ≥ 70</span>
+        <span class="chip">C+ ≥ 65</span><span class="chip">C ≥ 60</span><span class="chip">D+ ≥ 55</span>
+        <span class="chip">D ≥ 50</span><span class="chip">F &lt; 50</span>
+        <span class="btnw">แก้ไข</span>${P(4)}
+      </div>
+      <div class="hint">ระบบไม่ตัดเกรดให้อัตโนมัติ — คำนวณและ<b>เสนอ</b>เท่านั้น
+        อาจารย์ต้องกดยืนยันทีละคนหรือทั้งชั้น หลักเดียวกับที่ AI เสนอคะแนน</div>
+    </div>
+  </div>`,
+  notes:[
+    {t:"ตัดสินแล้ว: ระบบเป็นสมุดคะแนนของทั้งวิชา", settled:true,
+     b:"อาจารย์เลือกให้เก็บคะแนนกิจกรรมที่ระบบไม่ได้ตรวจด้วย (สอบ นำเสนอ เข้าชั้น) เพราะถ้าเก็บแค่ส่วนที่ AI ตรวจ CLO จะสะท้อนแค่ครึ่งวิชา และโจทย์ข้อ 11 “ส่งออกคะแนน” จะส่งออกได้แค่ครึ่งเดียว ราคาที่จ่ายคือ อาจารย์ต้องใช้ระบบนี้เป็นสมุดคะแนนหลัก ไม่ใช่เปิดเฉพาะตอนตรวจงาน",
+     src:"อาจารย์ตอบ 6 ส.ค. 69"},
+    {t:"“กิจกรรมการประเมิน” กว้างกว่า “งานที่ส่ง”", settled:true,
+     b:"การสอบคือกิจกรรมการประเมินที่ไม่มีไฟล์ให้เก็บ โครงข้อมูลจึงต้องเป็น กิจกรรมการประเมิน → (มี/ไม่มี) การส่งไฟล์ ไม่ใช่ ชิ้นงาน → ไฟล์ ความต่างนี้ลงลึกถึงตาราง เพราะกิจกรรมที่ไม่มีไฟล์ก็ยังต้องผูก CLO และยังต้องมีคะแนน",
+     src:"ผลจากคำตอบข้างบน · กระทบ ticket 12"},
+    {t:"ตัดสินแล้ว: ส่งช้าตั้งที่วิชา override ที่ชิ้นงาน", settled:true,
+     b:"อาจารย์เลือกแบบนี้ตรง ๆ เมื่อ 6 ส.ค. 69 — ค่าตั้งต้นอยู่ที่รายวิชาเพราะเป็นนโยบายของวิชา แต่ต้อง override ได้เป็นรายชิ้นเพราะมีการผ่อนผันจริงในระบบเดิม ทุกครั้งที่ override ต้องบันทึกว่าใครเปลี่ยน เปลี่ยนเมื่อไหร่ และเปลี่ยนจากอะไร",
+     src:"ticket 26 — ตัดสินแล้ว"},
+    {t:"ตัดเกรดอัตโนมัติหรือแค่เสนอ",
+     b:"เสนอ: เสนอเท่านั้น เพราะการตัดเกรดมีดุลพินิจที่ระบบไม่มีทางรู้ (นักศึกษาป่วย ผลงานพัฒนาชัดเจนช่วงท้าย) — และถ้าระบบตัดให้เลย ความรับผิดชอบจะเลือนไปอยู่กับระบบ ซึ่งเป็นสิ่งเดียวกับที่เราระวังไว้ทั้งโครงงาน",
+     src:"ต้องยืนยันกับอาจารย์"},
+  ]
+};
+
+/* ============================================================
+   03 — นำเข้ารายชื่อนักศึกษา
+   ============================================================ */
+const SC3 = {
+  t:"นักศึกษาในรายวิชา",
+  sub:"นำเข้าจาก Excel สี่ขั้น อัปโหลด → จับคู่คอลัมน์ → ตรวจก่อนยืนยัน → รายงานผล",
+  rq:"โจทย์ข้อ 2",
+  body:()=>`
+  <div class="wf">
+    <div class="wfbar"><b>นำเข้ารายชื่อ</b><div class="spacer"></div>
+      <span class="dim">ขั้นที่ 3 จาก 4 — ตรวจก่อนยืนยัน</span></div>
+    <div class="wfbody">
+      <div class="wizstep">
+        <span class="ws done">1 · เลือกไฟล์</span><span class="ws done">2 · จับคู่คอลัมน์</span>
+        <span class="ws on">3 · ตรวจก่อนยืนยัน</span><span class="ws">4 · ผลการนำเข้า</span>
+      </div>
+      <div class="row" style="margin-bottom:12px">
+        <span class="chip on">เพิ่มใหม่ 46 แถว</span><span class="chip">อัปเดตชื่อ 3 แถว</span>
+        <span class="chip">ข้าม 2 แถว</span>${P(1)}
+      </div>
+      <div class="scroll"><table class="tbl">
+        <tr><th>แถว</th><th>รหัสนักศึกษา</th><th>ชื่อ–สกุล</th><th>อีเมล</th><th>ผล</th></tr>
+        <tr><td class="num">2</td><td class="num">66010001</td><td>สมชาย ใจดี</td>
+          <td>66010001@kmitl.ac.th</td><td>เพิ่มใหม่</td></tr>
+        <tr><td class="num">3</td><td class="num">66010002</td><td>สมหญิง มีสุข</td>
+          <td>66010002@kmitl.ac.th</td><td>มีอยู่แล้ว — อัปเดตชื่อ${P(2)}</td></tr>
+        <tr><td class="num">4</td><td class="num">—</td><td>ไม่ระบุ</td><td>—</td>
+          <td>ข้าม: ไม่มีรหัสนักศึกษา</td></tr>
+        <tr><td class="num">5</td><td class="num">66010004</td><td>${ph("80%","s")}</td>
+          <td>${ph("90%","s")}</td><td>เพิ่มใหม่</td></tr>
+      </table></div>
+      <div class="box dash" style="margin-top:12px">
+        <b>คนที่อยู่ในระบบแต่ไม่อยู่ในไฟล์นี้ — 2 คน</b>${P(3)}
+        <div class="dim" style="margin-top:5px">ระบบ<b>ไม่ทำอะไรกับคนกลุ่มนี้เลย</b> ไม่ลบ ไม่ทำเครื่องหมายถอน
+          — แจ้งให้ทราบอย่างเดียว ถ้าอาจารย์ต้องการทำเครื่องหมายถอน ต้องกดเองทีละคน</div>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <span class="btnw pri">ยืนยันนำเข้า</span><span class="btnw">ย้อนกลับไปแก้การจับคู่</span>
+        <div class="spacer"></div><span class="dim">ยังไม่มีอะไรถูกบันทึกจนกว่าจะกดยืนยัน</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>รายชื่อในรายวิชา</b><div class="spacer"></div>
+      <span class="chip on">ทั้งหมด 48</span><span class="chip">ถอน 2</span>${P(4)}</div>
+    <div class="wfbody">
+      <div class="scroll"><table class="tbl">
+        <tr><th>รหัส</th><th>ชื่อ–สกุล</th><th class="num">ส่งแล้ว</th><th class="num">คะแนนสะสม</th><th>สถานะ</th></tr>
+        <tr><td class="num">66010001</td><td>สมชาย ใจดี</td><td class="num">18 / 21</td>
+          <td class="num">72.5</td><td>กำลังเรียน</td></tr>
+        <tr><td class="num">66010009</td><td>สมศรี ตั้งใจ</td><td class="num">6 / 21</td>
+          <td class="num">21.0</td><td><b>ถอนเมื่อ 12 ก.ย. — อาจารย์ทำเครื่องหมายเอง</b></td></tr>
+      </table></div>
+      <div class="hint">นักศึกษาที่ถอน <b>ไม่ถูกลบ</b> — คะแนนและงานที่ส่งไว้ยังอยู่ครบ
+        เพราะเป็นหลักฐานที่ต้องสืบกลับได้</div>
+    </div>
+  </div>`,
+  notes:[
+    {t:"ต้องเห็นผลก่อนกดยืนยัน", settled:true,
+     b:"การนำเข้าที่ผิดแล้วแก้ยากคือจุดที่ระบบเสียความเชื่อถือครั้งเดียวจบ ขั้นที่ 3 จึงบังคับ ไม่ใช่ทางเลือก และไม่มีอะไรถูกเขียนลงฐานข้อมูลก่อนกดยืนยัน",
+     src:"โจทย์ข้อ 2"},
+    {t:"นำเข้าซ้ำ = อัปเดต ไม่สร้างแถวใหม่",
+     b:"เสนอ: ใช้รหัสนักศึกษาเป็นกุญแจ เจอซ้ำให้อัปเดตชื่อ/อีเมล ไม่สร้างแถวใหม่ และไม่แตะคะแนนเดิม",
+     src:"ต้องถามอาจารย์"},
+    {t:"ตัดสินแล้ว: นำเข้าเป็น “เพิ่มเท่านั้น” ห้ามถอนให้เอง", settled:true,
+     b:"อาจารย์สั่งว่าจะไม่ลบชื่อออก เพราะคนที่ถอนบางคนมีคะแนนแล้วและต้องเก็บไว้ ผลคือปลายเทอมรายชื่อจะมากกว่าจำนวนจริง ซึ่งอาจารย์รับได้เพราะรู้เอง — แต่ระบบไม่รู้เอง จึงห้ามให้การนำเข้าไปทำเครื่องหมายถอนให้โดยเดาจากการหายไปจากไฟล์",
+     src:"อาจารย์ตอบ 6 ส.ค. 69"},
+    {t:"ตัวหารของ CLO ต้องนิยามให้ชัด",
+     b:"ถ้ารายชื่อมากกว่าจำนวนจริง การคำนวณ CLO attainment จะเพี้ยนลงเสมอ เพราะคนที่ถอนไปจะถูกนับเป็นคนที่ไม่ผ่าน เสนอ: รายงาน CLO และการส่งออกนับเฉพาะคนที่ส่งงานอย่างน้อย 1 ชิ้น และแสดงตัวเลขทั้งสองแบบเคียงกันเสมอ",
+     src:"ผลจากการตัดสินข้างบน · ticket 13"},
+  ]
+};
+
+/* ============================================================
+   04 — TA และสิทธิ์ (หน้าจอใหม่ · อาจารย์ขอมา)
+   ============================================================ */
+const SC4 = {
+  t:"ผู้ช่วยสอนและสิทธิ์", isNew:true,
+  sub:"เกิดขึ้นเพราะข้อเดียว: อาจารย์บอกว่า TA ต้องไม่เห็นคะแนนสอบ — ซึ่งแปลว่าระบบต้องมีบทบาทและสิทธิ์จริง ๆ",
+  rq:"โจทย์ข้อ 9, 11 · ticket 27",
+  body:()=>`
+  <div class="wf">
+    <div class="wfbar"><b>คนในรายวิชานี้</b><div class="spacer"></div>
+      <span class="btnw">+ เพิ่มผู้ช่วยสอน</span></div>
+    <div class="wfbody">
+      <div class="scroll"><table class="tbl">
+        <tr><th>ชื่อ</th><th>บทบาท</th><th>ตรวจงานชิ้นไหนได้</th><th>สถานะ</th></tr>
+        <tr><td><b>ผศ.ดร. ธนา</b></td><td>อาจารย์ผู้สอน · เจ้าของรายวิชา</td>
+          <td>ทุกชิ้น</td><td>—</td></tr>
+        <tr><td>นาย ก. (นศ.ป.โท)</td><td>ผู้ช่วยสอน</td>
+          <td>Wireframe · Journey · Persona${P(1)}</td><td>ตรวจไปแล้ว 32 ชิ้น</td></tr>
+        <tr><td>นางสาว ข.</td><td>ผู้ช่วยสอน</td>
+          <td>Heuristic Evaluation</td><td>ยังไม่เริ่ม</td></tr>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>สิทธิ์ของแต่ละบทบาท</b><div class="spacer"></div>
+      <span class="chip on">ข้อบังคับจากอาจารย์</span>${P(2)}</div>
+    <div class="wfbody">
+      <div class="scroll"><table class="perm">
+        <tr><th>ทำอะไรได้</th><th class="c">อาจารย์</th><th class="c">ผู้ช่วยสอน</th></tr>
+        <tr><td>ตรวจงานชิ้นที่ได้รับมอบหมาย และดูข้อเสนอของ AI</td>
+          <td class="c y">✓</td><td class="c y">✓</td></tr>
+        <tr><td>เห็นคะแนนของชิ้นงานที่ตัวเองตรวจ</td><td class="c y">✓</td><td class="c y">✓</td></tr>
+        <tr><td><b>เห็นคะแนนสอบกลางภาค / ปลายภาค</b></td>
+          <td class="c y">✓</td><td class="c n">✕</td></tr>
+        <tr><td><b>เห็นคะแนนรวมและเกรดของนักศึกษา</b></td>
+          <td class="c y">✓</td><td class="c n">✕</td></tr>
+        <tr><td>เห็นคะแนนของชิ้นงานที่คนอื่นตรวจ</td><td class="c y">✓</td><td class="c n">✕${P(3)}</td></tr>
+        <tr><td>แก้ rubric · CLO · ตารางเรียน · ตั้งค่ารายวิชา</td>
+          <td class="c y">✓</td><td class="c n">✕</td></tr>
+        <tr><td>ส่งออกคะแนน</td><td class="c y">✓</td><td class="c n">✕</td></tr>
+        <tr><td>ยืนยันคะแนนสุดท้ายที่ใช้ออกเกรด</td><td class="c y">✓</td><td class="c n">✕</td></tr>
+      </table></div>
+      <div class="hint">สิทธิ์ที่แคบที่สุดที่ยังทำงานได้ — ผู้ช่วยสอนเห็น<b>งานที่ต้องตรวจ</b>เท่านั้น
+        ไม่เห็นภาพรวมของนักศึกษาคนใดเลย ทำให้ TA เป็นผู้ตรวจ ไม่ใช่ผู้ตัดสินผลการเรียน</div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>คะแนนที่ TA ให้ นับเป็นคะแนนจริงเลยไหม</b>
+      <div class="spacer"></div><span class="dim">ยังไม่ตัดสิน</span>${P(4)}</div>
+    <div class="wfbody">
+      <div class="row">
+        <span class="chip on">นับเลย · อาจารย์สุ่มตรวจย้อนหลัง</span>
+        <span class="chip">เป็นข้อเสนอ · อาจารย์ต้องกดยืนยันทุกชิ้น</span>
+        <span class="chip">นับเลยถ้าตรงกับ AI · ต่างกันมากค่อยส่งให้อาจารย์</span>
+      </div>
+      <div class="hint">แบบที่สามน่าสนใจที่สุดสำหรับโครงงานนี้ เพราะใช้ AI เป็น<b>ตัวจับความไม่ลงรอย</b>
+        ไม่ใช่ตัวให้คะแนน — และได้ข้อมูลความเห็นต่างระหว่างคนสองคนมาใช้ในงานวิจัยฟรี ๆ</div>
+    </div>
+  </div>`,
+  notes:[
+    {t:"ตัดสินแล้ว: ระบบใหม่ยังมีบทบาท TA", settled:true,
+     b:"ticket 27 ตั้งคำถามว่าระบบใหม่ต้องมี TA ไหม และผมเชียร์ว่า “ไม่ต้องมี” เพราะจะได้ตัดระบบสิทธิ์ทิ้งทั้งก้อน — อาจารย์ตอบว่า TA ต้องไม่เห็นคะแนนสอบ ซึ่งเป็นการยืนยันทั้งสองอย่างพร้อมกัน: TA มีอยู่ และต้องมีเส้นแบ่งสิทธิ์",
+     src:"อาจารย์ตอบ 6 ส.ค. 69 · ticket 27"},
+    {t:"ระบบสิทธิ์กลับเข้ามาใน MVP", settled:true,
+     b:"รอบที่แล้วผมตัด “อาจารย์หลายคน + ระบบสิทธิ์” ออกจาก MVP โดยอ้างว่ารอ ticket 27 ตัดสินก่อน ตอนนี้ตัดสินแล้ว จึงต้องเอากลับเข้ามา — แต่เอากลับแค่รูปแบบขั้นต่ำ: สองบทบาทตายตัว ไม่ใช่ระบบสิทธิ์ที่ตั้งค่าเองได้",
+     src:"แก้การตัด MVP รอบที่ 1"},
+    {t:"TA เห็นชื่อนักศึกษาไหม",
+     b:"คนละคำถามกับคะแนน และสำคัญกับงานวิจัย: ถ้า TA ตรวจโดยไม่เห็นชื่อ จะได้ข้อมูลที่ปลอดอคติมากกว่า และเทียบกับ AI ได้ตรงกว่า แต่ในทางปฏิบัติ TA อาจจำงานได้อยู่ดีในชั้นเรียน 48 คน",
+     src:"ต้องถามอาจารย์ · ticket 27"},
+    {t:"คะแนนจาก TA มีสถานะอะไรในสายการสืบกลับ",
+     b:"โจทย์ข้อ 9 บอกว่าคะแนนต้อง trace ได้ว่ามาจากไหน ตอนนี้แหล่งที่มามีสามแบบแล้ว: AI เสนอ · TA ให้ · อาจารย์ให้ ซึ่งต้องแยกกันในฐานข้อมูล ไม่ใช่ยุบเป็น “ใครสักคนให้”",
+     src:"ticket 12 · ticket 27"},
+  ]
+};
+
+/* ============================================================
+   05 — CLO
+   ============================================================ */
+const SC5 = {
+  t:"CLO ของรายวิชา",
+  sub:"AI ร่างจาก course description และ มคอ.3 ที่อัปโหลดไว้ — รับทีละข้อ แก้ได้ก่อนรับ และเห็นเสมอว่าข้อไหนยังไม่มีเกณฑ์ผูก",
+  rq:"โจทย์ข้อ 3, 10",
+  body:()=>`
+  <div class="wf">
+    <div class="wfbar"><b>ผลลัพธ์การเรียนรู้ (CLO)</b><div class="spacer"></div>
+      <span class="btnw">+ เพิ่มเอง</span><span class="btnw pri">ให้ AI ช่วยร่าง</span></div>
+    <div class="wfbody">
+      <div class="scroll"><table class="tbl">
+        <tr><th style="width:56px">รหัส</th><th>ข้อความ</th><th style="width:92px">PLO</th>
+          <th style="width:150px">เกณฑ์ที่ผูกอยู่</th></tr>
+        <tr><td class="num">CLO1</td>
+          <td>อธิบายหลักการออกแบบส่วนติดต่อผู้ใช้ที่เน้นผู้ใช้เป็นศูนย์กลางได้</td>
+          <td>PLO2</td><td>4 เกณฑ์ · 3 ชิ้นงาน</td></tr>
+        <tr><td class="num">CLO2</td>
+          <td>วิเคราะห์ปัญหาการใช้งานจากงานจริงด้วยหลักการที่เรียนมาได้</td>
+          <td>PLO2, PLO4</td><td>6 เกณฑ์ · 4 ชิ้นงาน</td></tr>
+        <tr><td class="num">CLO3</td>
+          <td>ออกแบบต้นแบบส่วนติดต่อผู้ใช้ที่สอดคล้องกับผลการวิเคราะห์ได้</td>
+          <td>PLO3</td><td><b style="color:var(--warn)">ยังไม่มีเกณฑ์ผูก</b>${P(1)}</td></tr>
+        <tr><td class="num">CLO4</td><td>${ph("88%")}</td><td>${ph("60%","s")}</td>
+          <td>2 เกณฑ์ · 1 ชิ้นงาน + สอบปลายภาค${P(4)}</td></tr>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>เอกสารตั้งต้นของรายวิชา</b><div class="spacer"></div>
+      <span class="dim">ใช้เป็นวัตถุดิบของ CLO เท่านั้น</span>${P(3)}</div>
+    <div class="wfbody">
+      <div class="scroll"><table class="tbl">
+        <tr><th>เอกสาร</th><th>อัปโหลดเมื่อ</th><th>ระบบดึงอะไรออกมาได้</th></tr>
+        <tr><td><b>Course description</b> · 06016315</td><td>1 ส.ค. 69</td>
+          <td>คำอธิบายรายวิชา · จำนวนหน่วยกิต · วิชาบังคับก่อน</td></tr>
+        <tr><td><b>มคอ.3 / Syllabus</b> · 1/2569</td><td>1 ส.ค. 69</td>
+          <td>CLO เดิม · การผูก CLO×PLO</td></tr>
+        <tr><td class="dim">+ อัปโหลดเอกสารเพิ่ม</td><td class="dim">—</td><td class="dim">—</td></tr>
+      </table></div>
+      <div class="hint">ระบบ<b>ไม่</b>เอา มคอ.3 ไปกรอกตารางสัปดาห์ให้ — อาจารย์สั่งไว้ชัดว่าจะกรอกตารางเอง
+        และใช้การคัดลอกจากเทอมก่อนแทน</div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>AI ร่าง CLO ให้ 4 ข้อ</b><div class="spacer"></div>
+      <span class="dim">รับทีละข้อ · ยังไม่มีข้อไหนถูกบันทึก</span>${P(2)}</div>
+    <div class="wfbody stack">
+      <div class="box">
+        <div class="row" style="align-items:flex-start">
+          <div class="grow">ประเมินผลงานออกแบบของผู้อื่นโดยใช้เกณฑ์ heuristic ได้อย่างมีเหตุผลรองรับ</div>
+          <span class="btnw">แก้ก่อนรับ</span><span class="btnw pri">รับ</span><span class="btnw">ทิ้ง</span>
+        </div>
+        <div class="dim" style="margin-top:8px">ระดับ Bloom: ประเมินค่า · เสนอผูกกับ PLO4 ·
+          <b>อ้างอิง: มคอ.3 หมวด 4 ข้อ 2</b> — กดเพื่อดูข้อความต้นทาง</div>
+      </div>
+      <div class="box">
+        <div class="row" style="align-items:flex-start">
+          <div class="grow">${ph("76%")}</div>
+          <span class="btnw">แก้ก่อนรับ</span><span class="btnw pri">รับ</span><span class="btnw">ทิ้ง</span>
+        </div>
+      </div>
+      <div class="dim">ที่เหลืออีก 2 ข้อ</div>
+    </div>
+  </div>`,
+  notes:[
+    {t:"CLO ที่ไม่มีเกณฑ์ผูก = CLO ที่วัดไม่ได้",
+     b:"ต้องเตือนตั้งแต่หน้านี้ ไม่ใช่ไปรู้ตอนปลายเทอมตอนออกรายงาน และควรเตือนกลับทางด้วย: เกณฑ์ที่ไม่ผูกกับ CLO ข้อไหนเลย ก็ควรถูกถามว่าเก็บคะแนนไปทำไม",
+     src:"ticket 13 · โจทย์ข้อ 10"},
+    {t:"AI ร่างแล้วต้องรับทีละข้อ ห้ามรับยกชุด", settled:true,
+     b:"ถ้ากดรับทั้งชุดได้ในปุ่มเดียว อาจารย์จะกดโดยไม่อ่าน แล้ว CLO ที่เป็นฐานของทั้งวิชาจะกลายเป็นข้อความที่ไม่มีใครเป็นเจ้าของ",
+     src:"ticket 14 — หลักเดียวกับการรับคะแนนที่ AI เสนอ"},
+    {t:"ตัดสินแล้ว: เอกสารตั้งต้นใช้กับ CLO เท่านั้น", settled:true,
+     b:"รอบก่อนผมออกแบบให้ระบบอ่านแผนการสอนจาก มคอ.3 ไปกรอกตารางสัปดาห์ให้ด้วย อาจารย์ปฏิเสธส่วนนั้น — จะกรอกตารางเอง และใช้การคัดลอกจากเทอมก่อนแทน การอ่านเอกสารจึงเหลือขอบเขตเดียวคือช่วยร่าง CLO และทุกข้อที่ร่างต้องชี้กลับไปที่ย่อหน้าต้นทางได้",
+     src:"อาจารย์ตอบ 6 ส.ค. 69"},
+    {t:"CLO ต้องผูกกับกิจกรรมที่ไม่มีไฟล์ได้ด้วย", settled:true,
+     b:"เมื่อระบบเก็บคะแนนสอบด้วย CLO4 ก็ต้องผูกกับ “สอบปลายภาค” ได้ ทั้งที่ไม่มี rubric และไม่มีไฟล์ให้ตรวจ แปลว่าเส้นเชื่อม CLO ไม่ได้ผูกกับเกณฑ์อย่างเดียว แต่ผูกกับกิจกรรมการประเมินได้โดยตรงด้วย",
+     src:"ผลจากหน้าจอ 02"},
+  ]
+};
+
+/* ============================================================
+   06 — ตารางเรียนรายสัปดาห์ (รื้อใหม่ตามที่อาจารย์สั่ง)
+   ============================================================ */
+const WEEKS = [
+  {n:1,  topic:"แนะนำรายวิชา · UX คืออะไร", act:null},
+  {n:2,  topic:"Empathy และการสัมภาษณ์ผู้ใช้",
+         act:{t:"ส่งงาน Empathy Map (5)", st:"done", note:"ตรวจครบ 46/46"}},
+  {n:3,  topic:"Persona", act:{t:"ส่งงาน Persona (5)", st:"done", note:"ตรวจครบ 46/46"}},
+  {n:4,  topic:"Customer Journey Map",
+         act:{t:"ส่งงาน Journey (6)", st:"wait", note:"AI ตรวจแล้ว รออาจารย์ยืนยัน 12"}},
+  {n:5,  topic:"Heuristic Evaluation",
+         act:{t:"ส่งงาน Nielsen's 10 (5)", st:"wait", note:"รอ TA ตรวจ 46"}},
+  {n:6,  topic:"ทบทวนกลางภาค",
+         act:{t:"สอบกลางภาค (15)", st:"manual", note:"ไม่รับไฟล์ · กรอกคะแนนเอง"}},
+  {n:7,  topic:"Information Architecture",
+         act:{t:"ส่งงาน Sitemap (6)", st:"open", note:"เปิดรับอยู่ · ส่งแล้ว 31/46"}},
+  {n:8,  topic:"Wireframe และ Wireflow",
+         act:{t:"ส่งงาน Wireframe (10)", st:"open", note:"ยังไม่ถึงกำหนด · ส่งแล้ว 4/46"}},
+  {n:9,  topic:"Design System", act:null},
+  {n:10, topic:"การทดสอบกับผู้ใช้",
+         act:{t:"ส่งงาน UX Teardown (10)", st:"open", note:"ยังไม่เปิดรับ"}},
+  {n:11, topic:"", act:undefined},
+  {n:12, topic:"", act:undefined},
+  {n:13, topic:"", act:undefined},
+  {n:14, topic:"", act:undefined},
+  {n:15, topic:"นำเสนอโครงงาน",
+         act:{t:"โครงงานปลายภาค (30)", st:"open", note:"ยังไม่เปิดรับ"}},
+  {n:16, topic:"สอบปลายภาค",
+         act:{t:"สอบปลายภาค (15)", st:"manual", note:"ไม่รับไฟล์ · กรอกคะแนนเอง"}},
+];
+const weekRow = w=>{
+  if(w.act===undefined) return `<tr class="unset"><td class="num">${w.n}</td>
+    <td class="dim">ยังไม่ได้กรอก</td><td class="dim">ยังไม่ได้กรอก</td><td></td></tr>`;
+  if(w.act===null) return `<tr><td class="num">${w.n}</td><td>${esc(w.topic)}</td>
+    <td>${dot("none","ไม่มีกิจกรรมประเมิน")}</td><td class="dim">ตั้งใจเว้น</td></tr>`;
+  return `<tr><td class="num">${w.n}</td><td>${esc(w.topic)}</td>
+    <td>${dot(w.act.st, w.act.t)}</td><td class="dim">${esc(w.act.note)}</td></tr>`;
+};
+const SC6 = {
+  t:"ตารางเรียนรายสัปดาห์",
+  sub:"ตารางแถวละสัปดาห์ สองคอลัมน์ตามที่อาจารย์กำหนด — หัวข้อการสอน กับ กิจกรรมการประเมิน โดยคอลัมน์กิจกรรมพ่วงสถานะการตรวจไว้ด้วย",
+  rq:"โจทย์ข้อ 4",
+  body:()=>`
+  <div class="wf">
+    <div class="wfbar"><b>ภาค 1/2569 · 16 สัปดาห์</b><div class="spacer"></div>
+      <span class="btnw">คัดลอกจาก 2/2568</span>${P(1)}<span class="btnw pri">+ เพิ่มกิจกรรม</span></div>
+    <div class="wfbody">
+      <div class="scroll"><table class="tbl">
+        <tr><th style="width:60px">สัปดาห์</th><th style="width:32%">หัวข้อการสอน</th>
+          <th style="width:34%">กิจกรรมการประเมิน${P(2)}</th><th>สถานะ</th></tr>
+        ${WEEKS.map(weekRow).join("")}
+      </table></div>
+      <div class="legend">
+        ${dot("done","ตรวจเสร็จแล้ว")}${dot("wait","รอคนตรวจ")}${dot("open","เปิดรับ / ยังไม่ถึงกำหนด")}
+        ${dot("manual","ไม่รับไฟล์ กรอกคะแนนเอง")}${dot("none","ตั้งใจไม่มีกิจกรรม")}
+        <span class="st"><span class="dot" style="background:var(--line2)"></span>พื้นลาย = ยังไม่ได้กรอก</span>${P(3)}
+      </div>
+      <div class="hint">สัปดาห์ที่ <b>ตั้งใจไม่มีกิจกรรม</b> กับสัปดาห์ที่ <b>ยังไม่ได้กรอก</b> ต้องดูต่างกัน
+        ไม่งั้นอาจารย์จะไม่มีวันรู้ว่าตั้งค่าครบหรือยัง</div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>คัดลอกตารางจาก 2/2568</b><span class="dim">— ป๊อปอัป</span></div>
+    <div class="wfbody">
+      <div class="scroll"><table class="tbl">
+        <tr><th style="width:60px">สัปดาห์</th><th>หัวข้อการสอน</th><th>กิจกรรมการประเมิน</th>
+          <th style="width:96px">คัดลอก</th></tr>
+        <tr><td class="num">1</td><td>แนะนำรายวิชา · UX คืออะไร</td>
+          <td class="dim">— ไม่มี</td><td><span class="chip on">✓</span></td></tr>
+        <tr><td class="num">2</td><td>Empathy และการสัมภาษณ์ผู้ใช้</td>
+          <td>ส่งงาน Empathy Map (5)</td><td><span class="chip on">✓</span></td></tr>
+        <tr><td class="num">3</td><td>${ph("70%","s")}</td><td>${ph("60%","s")}</td>
+          <td><span class="chip on">✓</span></td></tr>
+      </table></div>
+      <div class="hint"><b>กำหนดส่งไม่ถูกคัดลอกมา</b> — ปฏิทินแต่ละเทอมไม่ตรงกัน
+        ทุกกิจกรรมที่คัดลอกมาจะมาแบบยังไม่มีวัน และขึ้นเตือนจนกว่าจะกรอก${P(4)}</div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>สัปดาห์ที่ 8 · Wireframe และ Wireflow</b></div>
+    <div class="wfbody stack">
+      <div><div class="lbl">หัวข้อการสอน</div><div class="fld on">Wireframe และ Wireflow</div></div>
+      <div><div class="lbl">กิจกรรมการประเมินในสัปดาห์นี้</div>
+        <div class="box"><div class="row"><b>ส่งงาน Wireframe และ Wireflow (10 คะแนน)</b>
+          <span class="chip on">รับไฟล์</span>
+          <span class="spacer"></span><span class="btnw">ตั้งค่าชิ้นงาน</span></div></div>
+      </div>
+      <div class="row"><span class="btnw">+ เพิ่มกิจกรรมอีกอันในสัปดาห์นี้</span>
+        <span class="dim">หนึ่งสัปดาห์มีได้มากกว่าหนึ่งกิจกรรม</span></div>
+    </div>
+  </div>`,
+  notes:[
+    {t:"ตัดสินแล้ว: ตาราง ไม่ใช่ตารางการ์ด และไม่อ่านจาก มคอ.3", settled:true,
+     b:"อาจารย์สั่งตรง ๆ ว่าจะกรอกเอง ขอเป็นตารางแถวละสัปดาห์ สองคอลัมน์คือหัวข้อการสอนกับกิจกรรมการประเมิน และให้มีระบบคัดลอกจากภาคก่อนแทนการให้ AI เดา — ตารางการ์ด 16 ช่องแบบรอบที่แล้วถูกยกเลิกทั้งหมด",
+     src:"อาจารย์ตอบ 6 ส.ค. 69"},
+    {t:"คำว่า “กิจกรรมการประเมิน” เปลี่ยนโครงข้อมูล", settled:true,
+     b:"อาจารย์ไม่ได้เรียกคอลัมน์นี้ว่า “งานที่ต้องส่ง” แต่เรียกว่ากิจกรรมการประเมิน ซึ่งกว้างกว่า — การสอบอยู่ในนี้ด้วยทั้งที่ไม่มีไฟล์ให้ส่ง โครงข้อมูลจึงเป็น กิจกรรมการประเมิน ที่ “มีหรือไม่มีการส่งไฟล์” ไม่ใช่ ชิ้นงาน ที่ต้องมีไฟล์เสมอ",
+     src:"อาจารย์ตอบ 6 ส.ค. 69 · กระทบ ticket 12"},
+    {t:"ตัดสินแล้ว: สีบอกสถานะการตรวจในตารางนี้", settled:true,
+     b:"อาจารย์บอกว่าน่าสนใจ จึงใส่เข้ามา ผลพลอยได้ที่สำคัญกว่าที่คิด: ตารางสัปดาห์กลายเป็นหน้าที่อาจารย์เปิดดูได้ทั้งเทอม ไม่ใช่หน้าที่เปิดครั้งเดียวตอนตั้งค่า — เพราะมันตอบคำถามว่า “ตอนนี้ค้างอะไรอยู่”",
+     src:"อาจารย์ตอบ 6 ส.ค. 69"},
+    {t:"กิจกรรมที่คัดลอกมาแล้วยังไม่มีวัน ต้องกันไม่ให้หลุด",
+     b:"เสนอ: กิจกรรมที่ยังไม่มีกำหนดส่ง เปิดให้นักศึกษาเห็นไม่ได้ และหน้าจอ 01 ต้องขึ้นว่าวิชานี้ยังตั้งค่าไม่ครบ n รายการ — ไม่งั้นการคัดลอกจะกลายเป็นแหล่งของงานที่ลืมตั้งวัน",
+     src:"ผลจากการตัดสินเรื่องคัดลอก"},
+  ]
+};
+
+/* ============================================================
+   07 — ตั้งค่าชิ้นงาน
+   ============================================================ */
+const SC7 = {
+  t:"ตั้งค่ากิจกรรมการประเมิน",
+  sub:"หน้าที่รวมการตัดสินใจไว้มากที่สุด: รับไฟล์ไหม ส่งเดี่ยวหรือกลุ่ม ผูก rubric ตัวไหน และใครตรวจ",
+  rq:"โจทย์ข้อ 4, 6, 7",
+  body:()=>`
+  <div class="wf">
+    <div class="wfbar"><b>Wireframe และ Wireflow</b><div class="spacer"></div>
+      <span class="dim">สัปดาห์ที่ 8 · ยังไม่เปิดให้ส่ง</span></div>
+    <div class="wfbody stack">
+      <div class="row">
+        <div class="grow"><div class="lbl">ชื่อกิจกรรม</div><div class="fld on">Wireframe และ Wireflow</div></div>
+        <div style="width:120px"><div class="lbl">คะแนนเต็ม</div><div class="fld on num">10</div></div>
+        <div style="width:170px"><div class="lbl">กำหนดส่ง</div><div class="fld on">21 ต.ค. 69 · 23:59</div></div>
+      </div>
+
+      <div><div class="lbl">รับไฟล์จากนักศึกษาไหม</div>
+        <div class="row"><span class="chip on">รับไฟล์ · AI ช่วยตรวจ</span>
+          <span class="chip">ไม่รับไฟล์ · กรอกคะแนนเอง</span>${P(1)}</div>
+        <div class="hint">ถ้าเลือก “ไม่รับไฟล์” ทั้งบล็อก rubric และการตรวจจะหายไป
+          เหลือแค่ช่องกรอกคะแนนกับการผูก CLO — นี่คือทางที่การสอบใช้</div>
+      </div>
+
+      <div><div class="lbl">รูปแบบการส่ง</div>
+        <div class="row"><span class="chip">รายบุคคล</span><span class="chip on">เป็นกลุ่ม</span>
+          <span class="dim">ขนาดกลุ่ม 3–4 คน</span>${P(2)}</div>
+        <div class="hint">กลุ่มถูกสร้าง <b>ต่อชิ้นงาน</b> ไม่ใช่ต่อรายวิชา —
+          นักศึกษาจับกลุ่มใหม่ได้ทุกครั้ง และคะแนนยังเก็บรายบุคคลเสมอ</div>
+      </div>
+
+      <div><div class="lbl">รับไฟล์แบบไหน</div>
+        <div class="row"><span class="chip on">ลิงก์ Figma</span><span class="chip on">PDF</span>
+          <span class="chip">รูปภาพ</span>${P(3)}</div>
+        <div class="hint">เลือก Figma แล้ว ระบบจะ <b>ดึงและแช่แข็งไฟล์ ณ เวลาที่ส่ง</b>
+          เพราะนักศึกษาแก้ไฟล์ Figma ต่อได้หลังกดส่ง ซึ่งจะทำให้หลักฐานที่ AI ชี้ไว้ไม่ตรงกับของจริง</div>
+      </div>
+
+      <div><div class="lbl">เกณฑ์การให้คะแนน</div>
+        <div class="box"><div class="row"><b>rubric: Wireframe และ Wireflow v3</b>
+          <span class="chip">7 เกณฑ์</span><span class="chip">4 ระดับ</span>
+          <span class="spacer"></span><span class="btnw">แก้ไข</span><span class="btnw">เปลี่ยนตัว</span></div></div>
+        <div class="row" style="margin-top:8px"><span class="btnw">+ ผูก rubric เพิ่มอีกชุด</span>
+          <span class="dim">หนึ่งชิ้นงานมีได้มากกว่าหนึ่ง</span></div>
+      </div>
+
+      <div><div class="lbl">ใครตรวจกิจกรรมนี้</div>
+        <div class="row"><span class="chip on">นาย ก. (ผู้ช่วยสอน)</span>
+          <span class="chip on">ผศ.ดร. ธนา</span><span class="btnw">+ มอบหมายเพิ่ม</span>${P(4)}</div>
+      </div>
+
+      <div><div class="lbl">นโยบายการส่งช้า</div>
+        <div class="box"><div class="row">
+          <span class="chip on">ใช้ค่าของรายวิชา</span><span class="chip">ตั้งเฉพาะชิ้นนี้</span></div>
+          <div class="dim" style="margin-top:8px">หักวันละ 10% ของคะแนนเต็ม · หักแล้วเหลือ ≤ 0 ให้ 1 คะแนน ·
+            ไม่ส่ง = 0 · ช้าเกิน 3 วัน = 0 และระบบไม่เรียก AI ตรวจเลย</div>
+        </div>
+        <div class="hint">ค่าพวกนี้ <b>ไม่อยู่ใน rubric</b> และไม่ผ่าน AI —
+          เป็นเลขคณิตที่ระบบคำนวณเองทั้งหมด แก้ค่ากลางได้ที่หน้าจอ 02</div>
+      </div>
+    </div>
+  </div>`,
+  notes:[
+    {t:"“รับไฟล์ไหม” คือสวิตช์ที่เปลี่ยนหน้าจอทั้งหน้า", settled:true,
+     b:"หลังอาจารย์ตัดสินให้ระบบเก็บคะแนนสอบด้วย หน้านี้ต้องรองรับกิจกรรมสองพันธุ์ในหน้าจอเดียว วิธีที่ถูกคือให้เป็นสวิตช์ตัวเดียวที่ซ่อนหรือแสดงทั้งบล็อก ไม่ใช่ทำหน้าจอแยกสองหน้า เพราะทั้งคู่ยังต้องผูก CLO และเข้าสมุดคะแนนเหมือนกัน",
+     src:"ผลจากคำตอบเรื่องสมุดคะแนน"},
+    {t:"กลุ่มเป็นของชิ้นงาน ไม่ใช่ของรายวิชา", settled:true,
+     b:"ตามโจทย์ข้อ 6 กลุ่มเปลี่ยนได้ทุกครั้งที่ส่ง ผลที่ตามมาคือ ตอนแบ่งข้อมูลไปทดสอบ ห้ามแบ่งตามกลุ่ม ต้องแบ่งตามนักศึกษา ไม่งั้นงานของคนเดียวกันจะโผล่ทั้งฝั่งฝึกและฝั่งวัด",
+     src:"ticket 11 · ticket 04"},
+    {t:"เลือก Figma = ต้องแช่แข็งไฟล์", settled:true,
+     b:"ไฟล์ Figma แก้ได้ตลอดเวลา ถ้าไม่เก็บภาพและโครงสร้าง ณ เวลาที่ส่ง หลักฐานที่ AI ชี้จะกลายเป็นชี้ผิดที่ภายในไม่กี่วัน และการตรวจซ้ำเพื่อวิจัยจะทำไม่ได้เลย",
+     src:"ticket 02 · ticket 17"},
+    {t:"การมอบหมายผู้ตรวจอยู่ที่ชิ้นงาน", settled:true,
+     b:"เมื่อมีบทบาท TA แล้ว ต้องมีที่ให้บอกว่าใครตรวจอะไร ที่ที่ถูกคือชิ้นงาน ไม่ใช่รายวิชา เพราะการแบ่งงานจริงแบ่งเป็นชิ้น ๆ และคนละชิ้นอาจคนละคน — และนี่คือสิ่งที่ทำให้หน้าจอ 09 คิวงานรอตรวจ กรองตามคนได้",
+     src:"ต่อจากหน้าจอ 04"},
+  ]
+};
+
+/* ============================================================
+   08 — สร้าง rubric (สองโหมด)
+   ============================================================ */
+const CRITS = [
+  {id:"C1", t:"การใช้สีตามระบบที่กำหนด", clo:"CLO3", w:15},
+  {id:"C2", t:"ความสม่ำเสมอของ typography", clo:"CLO3", w:15},
+  {id:"C3", t:"ระยะห่างและ spacing scale", clo:"CLO3", w:10},
+  {id:"C4", t:"ความชัดเจนของลำดับขั้นการใช้งาน", clo:"CLO2", w:25},
+  {id:"C5", t:"การจัดการข้อผิดพลาดและสถานะว่าง", clo:"CLO2", w:20},
+  {id:"C6", t:"ความสามารถในการเข้าถึง", clo:"CLO2", w:15},
+];
+const LVDESC = {
+  C1:["ใช้สีนอกระบบทั่วทั้งงาน","ใช้สีนอกระบบหลายจุด","ใช้สีนอกระบบไม่เกิน 2 จุด","ใช้สีจาก token ครบทุกจุด"],
+  C4:["ผู้ใช้ไม่รู้ว่าอยู่ขั้นไหน","บอกขั้นแต่ย้อนกลับไม่ได้","บอกขั้นและย้อนกลับได้ แต่ไม่บอกว่าเหลือกี่ขั้น","บอกครบทั้งขั้นปัจจุบัน จำนวนขั้น และทางย้อนกลับ"],
+};
+const rubricHead = ()=>`
+  <div class="wfbar"><b>rubric: Wireframe และ Wireflow</b>
+    <span class="chip on">v3 · ร่าง</span><div class="spacer"></div>
+    <span class="dim">v2 ถูกใช้ตรวจไปแล้ว 14 กลุ่ม — แก้ที่นี่ไม่กระทบของเดิม</span>${P(1)}</div>`;
+
+const RVA = ()=>`
+  <div class="wf">${rubricHead()}
+    <div class="wfbody">
+      <div class="scroll">
+        <div class="rgrid" style="grid-template-columns:190px repeat(4,minmax(130px,1fr)) 74px">
+          <div class="rh">เกณฑ์</div><div class="rh">1 · ต้องปรับปรุง</div><div class="rh">2 · พอใช้</div>
+          <div class="rh">3 · ดี</div><div class="rh">4 · ดีเยี่ยม</div><div class="rh">น้ำหนัก</div>
+          ${CRITS.map(c=>`
+            <div><b>${c.id}</b> ${esc(c.t)}<div class="dim mono">${c.clo}</div></div>
+            ${[0,1,2,3].map(i=> LVDESC[c.id]
+              ? `<div class="rc">${esc(LVDESC[c.id][i])}</div>`
+              : `<div class="rc empty">ยังไม่ได้เขียน</div>`).join("")}
+            <div class="num">${c.w}%</div>`).join("")}
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <span class="chip on">น้ำหนักรวม 100%</span>
+        <span class="dim">ช่องคำบรรยายที่ยังว่าง <b>16 จาก 24</b> ช่อง</span>${P(2)}
+        <div class="spacer"></div><span class="btnw">ให้ AI ร่างช่องที่ว่าง</span>
+      </div>
+    </div>
+  </div>`;
+
+const RVB = ()=>`
+  <div class="wf">${rubricHead()}
+    <div class="wfbody">
+      <div class="wizstep">
+        <span class="ws done">C1</span><span class="ws done">C2</span><span class="ws done">C3</span>
+        <span class="ws on">C4 · ลำดับขั้นการใช้งาน</span><span class="ws">C5</span><span class="ws">C6</span>
+        <span class="ws">น้ำหนัก</span>
+      </div>
+      <div class="stack">
+        <div class="row">
+          <div class="grow"><div class="lbl">ชื่อเกณฑ์</div>
+            <div class="fld on">ความชัดเจนของลำดับขั้นการใช้งาน</div></div>
+          <div style="width:120px"><div class="lbl">ผูกกับ CLO</div><div class="fld on">CLO2</div></div>
+        </div>
+        <div><div class="lbl">คำบรรยายทั้งสี่ระดับ — เขียนพร้อมกันเพื่อให้เส้นแบ่งชัด</div>
+          <div class="stack">
+            ${[1,2,3,4].map((n,i)=>`
+              <div class="row" style="align-items:flex-start">
+                <div class="mono" style="width:22px;padding-top:8px">${n}</div>
+                <div class="fld on grow">${esc(LVDESC.C4[i])}</div>
+              </div>`).join("")}
+          </div>
+        </div>
+        <div class="hint">เขียนสี่ช่องติดกันทำให้เห็นทันทีว่า “ระดับ 2 กับ 3 ต่างกันตรงไหน”
+          ซึ่งเป็นคำถามที่ตอบไม่ได้เวลากรอกตารางทีละคอลัมน์${P(2)}</div>
+        <div class="row"><span class="btnw">← C3</span><span class="btnw pri">ถัดไป: C5 →</span>
+          <div class="spacer"></div><span class="dim">4 จาก 6 เกณฑ์</span></div>
+      </div>
+    </div>
+  </div>`;
+
+const rubricFoot = ()=>`
+  <div class="box dash" style="margin-top:16px">
+    <div class="row"><b>ตัวอย่างงานอ้างอิงของ rubric ตัวนี้</b>
+      <div class="spacer"></div><span class="dim">ยกมาจาก v2 ของเทอม 2/2568</span>${P(3)}</div>
+    <div class="row" style="margin-top:10px">
+      <div class="exthumb" style="width:78px">🥇</div>
+      <div class="exthumb" style="width:78px">🥈</div>
+      <div class="exthumb" style="width:78px">🥉</div>
+      <div class="grow dim" style="padding-left:6px">ระหว่างตรวจ อาจารย์กดปักงานชิ้นไหนก็ได้เป็น
+        “ตัวอย่างระดับนี้” — ระบบเก็บไว้กับ rubric เวอร์ชันนั้น และคัดลอกข้ามเทอมไปด้วย</div>
+    </div>
+  </div>`;
+
+const RVARIANTS = {
+  B:{name:"โหมดกรอก · ทีละเกณฑ์", render:RVB,
+     unit:"โหมดที่ใช้ตอนสร้าง — เห็นทีละเกณฑ์แต่ครบสี่ระดับ ตัดสินใจที่ “เส้นแบ่งระหว่างระดับอยู่ตรงไหน”"},
+  A:{name:"โหมดตรวจทาน · ตารางรวม", render:RVA,
+     unit:"โหมดที่ใช้ตอนดู — เห็นทั้ง rubric พร้อมกัน ตัดสินใจที่ “ภาพรวมสมดุลไหม น้ำหนักครบไหม ช่องไหนยังว่าง”"},
+};
+
+const SC8 = {
+  t:"สร้าง rubric",
+  sub:"หน้าจอที่ยากที่สุดฝั่งอาจารย์ — สองโหมดของหน้าจอเดียวกัน ไม่ใช่สองทางเลือกที่ต้องเลือกอันเดียว",
+  rq:"โจทย์ข้อ 7",
+  variants:true,
+  body:()=>RVARIANTS[S.variant].render()+rubricFoot(),
+  notes:[
+    {t:"แก้ rubric ที่ถูกใช้ตรวจไปแล้ว = สร้างเวอร์ชันใหม่", settled:true,
+     b:"ห้ามแก้ทับของเดิมเด็ดขาด คะแนนทุกใบต้องชี้กลับไปยังเวอร์ชันที่ใช้ตรวจจริงได้ และห้ามเปลี่ยนเวอร์ชันกลางชิ้นงาน",
+     src:"ticket 10 · ticket 15"},
+    {t:"ตัดสินแล้ว: กรอกด้วยโหมดทีละเกณฑ์ ดูด้วยตารางรวม", settled:true,
+     b:"ตารางเต็ม 6 เกณฑ์ × 4 ระดับ = 24 ช่องคำบรรยาย ซึ่งเป็นเหตุผลที่ rubric ส่วนใหญ่ในโลกจริงถูกเขียนไม่ครบ — แต่ตารางเดียวกันนั้นคือมุมมองที่ดีที่สุดตอนอยากรู้ว่าน้ำหนักครบไหมและช่องไหนยังว่าง สองโหมดจึงไม่แข่งกัน สลับได้ตลอดเวลาและแก้ rubric ตัวเดียวกัน",
+     src:"อาจารย์ตอบ 6 ส.ค. 69"},
+    {t:"ตัดสินแล้ว: ตัวอย่างงานที่ปักไว้ข้ามเทอมได้", settled:true,
+     b:"ปักตอนตรวจ (หน้าจอ 09 → ticket 21) เพราะเป็นจังหวะที่อาจารย์ตัดสินอยู่แล้ว ไม่ใช่งานเพิ่ม แล้วคัดลอกข้ามเทอมตามที่อาจารย์เลือกไว้ที่หน้าจอ 01 — ตัวอย่างเหล่านี้คือ anchor ของ ticket 15 และเป็นวัตถุดิบของคู่เปรียบเทียบใน ticket 16",
+     src:"อาจารย์ตอบ 6 ส.ค. 69 · ticket 15, 16, 21"},
+  ]
+};
+
+/* ============================================================
+   09 — คิวงานรอตรวจของทั้งเทอม (หน้าจอใหม่ · อาจารย์ขอมาเอง)
+   ============================================================ */
+const SC9 = {
+  t:"คิวงานรอตรวจ", isNew:true, phase:"ระหว่างเทอม",
+  sub:"หน้าจอที่อาจารย์เพิ่มเข้ามาเอง และน่าจะเป็นหน้าที่เปิดบ่อยที่สุดในระบบ — ตอบคำถามเดียวว่า “ตอนนี้ค้างอะไรอยู่ และควรลงมือตรงไหนก่อน”",
+  rq:"โจทย์ข้อ 8 · ทางเข้าของ ticket 21",
+  body:()=>`
+  <div class="wf">
+    <div class="wfbar"><b>คิวงานรอตรวจ · 1/2569</b><div class="spacer"></div>
+      <span class="chip on">ของฉัน</span><span class="chip">ทั้งรายวิชา</span>
+      <span class="chip">ของผู้ช่วยสอน</span>${P(1)}</div>
+    <div class="wfbody">
+      <div class="scroll"><table class="tbl">
+        <tr><th>กิจกรรม</th><th>สัปดาห์</th><th class="num">ส่งแล้ว</th>
+          <th class="num">AI ตรวจแล้ว</th><th class="num">รอคนยืนยัน</th><th>ผู้ตรวจ</th><th></th></tr>
+        <tr><td><b>Journey Map</b></td><td class="num">4</td><td class="num">46/46</td>
+          <td class="num">46</td><td class="num"><b>12</b>${P(2)}</td><td>ผศ.ดร. ธนา</td>
+          <td><span class="btnw pri">ตรวจต่อ</span></td></tr>
+        <tr><td><b>Nielsen's 10</b></td><td class="num">5</td><td class="num">46/46</td>
+          <td class="num">46</td><td class="num">46</td><td>นางสาว ข. (ผู้ช่วยสอน)</td>
+          <td><span class="btnw">ดูความคืบหน้า</span></td></tr>
+        <tr><td><b>Sitemap</b></td><td class="num">7</td><td class="num">31/46</td>
+          <td class="num">31</td><td class="num">31</td><td>ยังไม่มอบหมาย${P(3)}</td>
+          <td><span class="btnw">มอบหมาย</span></td></tr>
+        <tr><td><b>สอบกลางภาค</b></td><td class="num">6</td><td class="dim">ไม่รับไฟล์</td>
+          <td class="dim">—</td><td class="dim">—</td><td>—</td>
+          <td><span class="btnw">กรอกคะแนน</span></td></tr>
+      </table></div>
+      <div class="hint">แถวของ<b>สอบ</b>ยังอยู่ในคิวนี้ ทั้งที่ไม่มีอะไรให้ตรวจ —
+        เพราะคิวนี้ไม่ได้ตอบว่า “ต้องตรวจอะไร” แต่ตอบว่า <b>“คะแนนช่องไหนในสมุดยังว่างอยู่”</b></div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>Journey Map · เหลือ 12 ชิ้นที่ AI ไม่มั่นใจ</b><div class="spacer"></div>
+      <span class="dim">เรียงจากที่ควรดูก่อน</span>${P(4)}</div>
+    <div class="wfbody">
+      <div class="scroll"><table class="tbl">
+        <tr><th>นักศึกษา / กลุ่ม</th><th class="num">AI เสนอ</th><th>เหตุผลที่ถูกยกขึ้นมา</th><th></th></tr>
+        <tr><td>กลุ่ม 3 · 4 คน</td><td class="num">4.5 / 6</td>
+          <td>AI มั่นใจต่ำในเกณฑ์ C4 — คำบรรยายระดับ 2 กับ 3 ต่างกันน้อย</td>
+          <td><span class="btnw pri">เปิดตรวจ</span></td></tr>
+        <tr><td>กลุ่ม 7 · 3 คน</td><td class="num">5.5 / 6</td>
+          <td>ต่างจากคะแนนที่อาจารย์เคยให้งานลักษณะเดียวกันมาก</td>
+          <td><span class="btnw">เปิดตรวจ</span></td></tr>
+        <tr><td>กลุ่ม 1 · 4 คน</td><td class="num">3.0 / 6</td>
+          <td>ส่งช้า 1 วัน — หัก 10% แล้ว แต่คะแนนดิบยังต้องยืนยัน</td>
+          <td><span class="btnw">เปิดตรวจ</span></td></tr>
+        <tr><td>${ph("60%","s")}</td><td>${ph("40%","s")}</td><td>${ph("85%","s")}</td><td></td></tr>
+      </table></div>
+      <div class="hint">รายละเอียดของการกดเข้าไปตรวจ อยู่ใน <b>ticket 21</b> ไม่ใช่หน้านี้ —
+        หน้านี้จบหน้าที่ตรงที่พาอาจารย์ไปยืนอยู่หน้าชิ้นที่ควรตรวจที่สุด</div>
+    </div>
+  </div>`,
+  notes:[
+    {t:"หน้าจอที่อาจารย์ระบุว่าขาด", settled:true,
+     b:"ตอนถามว่ามีหน้าจอไหนหายไปบ้าง อาจารย์เลือกครบทั้งสี่ข้อ รวมถึง “คิวงานรอตรวจของทั้งเทอม” — สัญญาณว่าหน่วยของการทำงานจริงไม่ใช่ “รายวิชา” หรือ “ชิ้นงาน” แต่คือ “ของที่ค้างอยู่ตอนนี้”",
+     src:"อาจารย์ตอบ 6 ส.ค. 69"},
+    {t:"เรียงคิวด้วยอะไร คือคำถามวิจัยที่ซ่อนอยู่",
+     b:"ถ้าเรียงตามกำหนดส่ง ก็เป็นแค่รายการ แต่ถ้าเรียงตามความไม่มั่นใจของ AI จะกลายเป็น active learning — อาจารย์ตรวจน้อยชิ้นแต่ระบบเรียนรู้เร็วที่สุด ซึ่งเป็นเนื้อโดยตรงของ ticket 16 และเป็นจุดขายของโครงงาน",
+     src:"ticket 16 · ticket 21"},
+    {t:"กิจกรรมที่ยังไม่มอบหมายผู้ตรวจต้องเด้งขึ้นมา",
+     b:"เมื่อมี TA แล้ว งานที่ไม่มีเจ้าของคือจุดที่ของหาย เพราะทุกคนคิดว่าอีกคนตรวจอยู่ — คิวนี้จึงต้องแสดงงานที่ยังไม่มีผู้ตรวจให้เห็นก่อนงานที่มีคนดูแลอยู่แล้ว",
+     src:"ต่อจากหน้าจอ 04"},
+    {t:"อาจารย์เห็นคิวของ TA ได้ แต่ TA เห็นแค่ของตัวเอง",
+     b:"ตัวกรองด้านบนมีสามตัวสำหรับอาจารย์ แต่สำหรับ TA จะเหลือตัวเดียวและเลือกไม่ได้ — เป็นหน้าจอเดียวกันที่แสดงต่างกันตามบทบาท ไม่ใช่หน้าจอคนละหน้า",
+     src:"ต่อจากหน้าจอ 04"},
+  ]
+};
+
+/* ============================================================
+   10 — สมุดคะแนนรวมทั้งวิชา (หน้าจอใหม่ · อาจารย์ขอมา)
+   ============================================================ */
+const SC10 = {
+  t:"สมุดคะแนนของรายวิชา", isNew:true, phase:"ปลายเทอม",
+  sub:"ที่ที่คะแนนทุกแหล่งมาบรรจบกัน — งานที่ AI ช่วยตรวจ คะแนนสอบที่กรอกเอง และการสะท้อนกลับไปที่ CLO",
+  rq:"โจทย์ข้อ 9, 10, 11",
+  body:()=>`
+  <div class="wf">
+    <div class="wfbar"><b>สมุดคะแนน · 1/2569</b><div class="spacer"></div>
+      <span class="btnw">ส่งออก Excel</span><span class="btnw">ส่งออกแบบ มคอ.5</span>${P(1)}</div>
+    <div class="wfbody">
+      <div class="scroll"><table class="tbl">
+        <tr><th>นักศึกษา</th><th class="num">Empathy<br>5</th><th class="num">Persona<br>5</th>
+          <th class="num">Journey<br>6</th><th class="num">กลางภาค<br>15</th>
+          <th class="num">…</th><th class="num">รวม<br>100</th><th>เกรดที่เสนอ</th></tr>
+        <tr><td>66010001 สมชาย ใจดี</td><td class="num">4.5</td><td class="num">5.0</td>
+          <td class="num">5.0</td><td class="num">12.0</td><td class="num dim">…</td>
+          <td class="num"><b>72.5</b></td><td>B</td></tr>
+        <tr><td>66010002 สมหญิง มีสุข</td><td class="num">5.0</td><td class="num">4.0</td>
+          <td class="num"><b>รอยืนยัน</b>${P(2)}</td><td class="num">14.0</td><td class="num dim">…</td>
+          <td class="num dim">ยังไม่ครบ</td><td class="dim">—</td></tr>
+        <tr><td>66010009 สมศรี ตั้งใจ <span class="chip">ถอน</span></td><td class="num">3.0</td>
+          <td class="num">2.5</td><td class="num dim">ไม่ส่ง 0</td><td class="num dim">ขาดสอบ</td>
+          <td class="num dim">…</td><td class="num">21.0</td><td class="dim">ไม่นับ${P(3)}</td></tr>
+      </table></div>
+      <div class="hint">ทุกช่องคลิกได้ และเปิดออกมาเป็น<b>ที่มาของคะแนนช่องนั้น</b> —
+        AI เสนอเท่าไหร่ ใครแก้ ใช้ rubric เวอร์ชันไหน หักส่งช้าไปเท่าไหร่ (โจทย์ข้อ 9)</div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>การบรรลุ CLO ของรายวิชา</b><div class="spacer"></div>
+      <span class="dim">นับจากนักศึกษาที่ส่งงานอย่างน้อย 1 ชิ้น · 46 คน</span>${P(4)}</div>
+    <div class="wfbody">
+      <div class="scroll"><table class="tbl">
+        <tr><th>CLO</th><th>มาจากกิจกรรมไหนบ้าง</th><th class="num">คะแนนเฉลี่ย</th>
+          <th class="num">ผ่านเกณฑ์ 60%</th><th>ผล</th></tr>
+        <tr><td class="num">CLO1</td><td>Empathy · Persona · กลางภาค</td><td class="num">74%</td>
+          <td class="num">41 / 46</td><td>${dot("done","บรรลุ")}</td></tr>
+        <tr><td class="num">CLO2</td><td>Journey · Nielsen's 10 · Sitemap · ปลายภาค</td>
+          <td class="num">63%</td><td class="num">30 / 46</td><td>${dot("wait","ต่ำกว่าเป้า")}</td></tr>
+        <tr><td class="num">CLO3</td><td class="dim">ยังไม่มีเกณฑ์หรือกิจกรรมผูก</td><td class="dim">—</td>
+          <td class="dim">—</td><td>${dot("none","วัดไม่ได้")}</td></tr>
+      </table></div>
+      <div class="hint">แถว CLO3 คือเหตุผลที่คำเตือนต้องขึ้นตั้งแต่หน้าจอ 05 —
+        ถ้ามารู้ตอนนี้ก็สายเกินแก้ไปแล้วทั้งเทอม</div>
+    </div>
+  </div>`,
+  notes:[
+    {t:"สมุดคะแนนคือที่ที่โจทย์สามข้อมาบรรจบกัน", settled:true,
+     b:"ข้อ 9 (สืบกลับได้ว่าคะแนนมาจากไหน) ข้อ 10 (สะท้อนไป CLO) ข้อ 11 (ดูและส่งออกได้) เป็นสามมุมของหน้าจอเดียวกัน ถ้าแยกเป็นสามหน้าจะไม่มีหน้าไหนตอบคำถามจริงของอาจารย์ได้ครบ",
+     src:"โจทย์ข้อ 9, 10, 11"},
+    {t:"ช่อง “รอยืนยัน” ต้องต่างจากช่องว่าง", settled:true,
+     b:"คะแนนที่ AI เสนอแล้วแต่ยังไม่มีใครยืนยัน ห้ามแสดงเป็นตัวเลขเด็ดขาด ไม่งั้นอาจารย์จะเผลออ่านเป็นคะแนนจริงและส่งออกไปทั้งอย่างนั้น — ผลรวมของนักศึกษาคนนั้นจึงต้องเป็น “ยังไม่ครบ” ไม่ใช่ตัวเลขที่ดูสมบูรณ์",
+     src:"ticket 14 · ticket 20"},
+    {t:"คนที่ถอนอยู่ในตารางแต่ไม่อยู่ในสถิติ", settled:true,
+     b:"ตามที่อาจารย์สั่งว่าไม่ลบชื่อ ทางออกคือคนถอนยังมีแถวและคะแนนครบ แต่ถูกตัดออกจากทั้งการคำนวณ CLO และการเสนอเกรด และต้องเห็นชัดในแถวว่าถูกตัดออก",
+     src:"อาจารย์ตอบ 6 ส.ค. 69"},
+    {t:"ตัวหารของ CLO ต้องเขียนติดไว้บนหน้าจอ",
+     b:"เสนอ: ใช้ “นักศึกษาที่ส่งงานอย่างน้อย 1 ชิ้น” เป็นตัวหาร และเขียนไว้บนหัวตารางตลอดเวลา ไม่ใช่ซ่อนในเอกสาร เพราะตัวเลขการบรรลุ CLO จะถูกเอาไปใช้จริงในการประกันคุณภาพ และคนอ่านต้องรู้ว่าหารด้วยอะไร",
+     src:"ต่อจากหน้าจอ 03 · ticket 13"},
+  ]
+};
+
+const SCREENS = [SC1,SC2,SC3,SC4,SC5,SC6,SC7,SC8,SC9,SC10];
+const VKEYS = Object.keys(RVARIANTS);
+
+/* ============================================================ render */
+function renderRail(){
+  return `<h1>การเดินทางของอาจารย์</h1>` + SCREENS.map((s,i)=>`
+    ${s.phase?`<div class="phase">${esc(s.phase)}</div>`:""}
+    <div class="step ${i===S.i?"on":""}" data-sc="${i}" tabindex="0" role="button">
+      <span class="no">${String(i+1).padStart(2,"0")}</span>
+      <span class="tt">${esc(s.t)}${s.isNew?'<span class="nw">ใหม่</span>':""}
+        <span class="rq">${esc(s.rq)}</span></span>
+    </div>`).join("") + `
+    <div class="railnote">รอบที่ 3 — หลังอาจารย์ตอบคำถามครบ 6 ข้อ เมื่อ 6 ส.ค. 69
+      <br><br>สี่หน้าจอที่ทำเครื่องหมาย <b>ใหม่</b> คือหน้าที่อาจารย์ระบุเองว่าหายไป
+      <br><br>เอกสาร course description และ มคอ.3 ใช้เป็นวัตถุดิบของ <b>ขั้น 05 CLO เท่านั้น</b> —
+      ตารางสัปดาห์อาจารย์กรอกเองและคัดลอกจากเทอมก่อน</div>`;
+}
+function renderMain(){
+  const s = SCREENS[S.i];
+  return `<h1 class="hd">${String(S.i+1).padStart(2,"0")} · ${esc(s.t)}</h1>
+    <p class="sub">${esc(s.sub)}</p>${s.body()}`;
+}
+function renderNotes(){
+  const s = SCREENS[S.i];
+  return `<h2>จุดที่ต้องตัดสินใจ</h2>` + s.notes.map((n,i)=>`
+    <div class="note ${n.settled?"settled":""} ${S.pin===i+1?"on":""}" data-note="${i+1}">
+      <div class="nh"><span class="nn">${i+1}</span><span class="nt">${esc(n.t)}</span></div>
+      <div class="nb">${esc(n.b)}</div>
+      <span class="src">${esc(n.src)}</span>
+    </div>`).join("");
+}
+function renderBar(){
+  const s = SCREENS[S.i];
+  const on = !!s.variants;
+  return `<b>${String(S.i+1).padStart(2,"0")}</b> <span class="dim">${esc(s.t)}</span>
+    <span class="k">↑ ↓ เปลี่ยนหน้าจอ</span>
+    <div class="spacer"></div>
+    ${on ? VKEYS.map(k=>`<button class="vb ${k===S.variant?"on":""}" data-v="${k}">${k} · ${esc(RVARIANTS[k].name)}</button>`).join("")
+         : `<span class="dim">หน้าจอนี้มีแบบเดียว — สองโหมดอยู่ที่หน้าจอ 08 สร้าง rubric</span>`}
+    ${on ? `<span class="k">← → สลับโหมด</span>` : ""}
+    ${on ? `<span class="dim" style="flex-basis:100%;padding-top:4px">${esc(RVARIANTS[S.variant].unit)}</span>` : ""}`;
+}
+function render(){
+  document.getElementById("rail").innerHTML  = renderRail();
+  document.getElementById("main").innerHTML  = renderMain();
+  document.getElementById("notes").innerHTML = renderNotes();
+  document.getElementById("bar").innerHTML   = renderBar();
+}
+
+/* ============================================================ events */
+function go(i){ S.i=(i+SCREENS.length)%SCREENS.length; S.pin=null; render(); window.scrollTo(0,0); }
+function setVariant(v){
+  S.variant=v;
+  const u=new URL(location); u.searchParams.set("variant",v); history.replaceState({},"",u);
+  render();
+}
+document.addEventListener("click",e=>{
+  const st=e.target.closest("[data-sc]");   if(st){ go(+st.dataset.sc); return; }
+  const vb=e.target.closest("[data-v]");    if(vb){ setVariant(vb.dataset.v); return; }
+  const pn=e.target.closest("[data-pin]");  if(pn){
+    S.pin=+pn.dataset.pin; render();
+    const el=document.querySelector(`[data-note="${S.pin}"]`);
+    if(el) el.scrollIntoView({block:"nearest"});
+    return;
+  }
+  const nt=e.target.closest("[data-note]"); if(nt){ S.pin=+nt.dataset.note; render(); }
+});
+document.addEventListener("keydown",e=>{
+  const t=e.target;
+  if(t && (t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.tagName==="SELECT"||t.isContentEditable)) return;
+  if(e.key==="ArrowDown"){ e.preventDefault(); go(S.i+1); }
+  if(e.key==="ArrowUp"){   e.preventDefault(); go(S.i-1); }
+  if(!SCREENS[S.i].variants) return;
+  if(e.key==="ArrowRight") setVariant(VKEYS[(VKEYS.indexOf(S.variant)+1)%VKEYS.length]);
+  if(e.key==="ArrowLeft")  setVariant(VKEYS[(VKEYS.indexOf(S.variant)-1+VKEYS.length)%VKEYS.length]);
+});
+
+S.variant = new URL(location).searchParams.get("variant") || "B";
+if(!VKEYS.includes(S.variant)) S.variant="B";
+render();
+</script>

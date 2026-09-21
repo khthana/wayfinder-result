@@ -1,0 +1,853 @@
+<style>
+/* ============================================================
+   Wireframe ฝั่งนักศึกษา — ticket 20 · รอบที่ 1
+   ใช้ CSS ชุดเดียวกับ wireframe ฝั่งอาจารย์ (ticket 19) โดยตั้งใจ —
+   สองฝั่งเป็นระบบเดียวกัน ไม่ใช่สองผลิตภัณฑ์
+   ความละเอียดต่ำเหมือนกัน: โครงกล่องและลำดับข้อมูล ไม่ลงสี
+   สีที่ใช้มีสองชุดเท่านั้น และทั้งคู่เป็นเนื้อหา ไม่ใช่การตกแต่ง —
+   สีหมุด = จุดที่ต้องตัดสินใจ · สีจุดสถานะ = สถานะการตรวจ ซึ่งอาจารย์ขอมาเอง
+   ============================================================ */
+:root{
+  --bg:#FAF9F6; --panel:#FFFFFF; --sunk:#F2F0EA;
+  --ink:#1B1A16; --ink2:#6B675D; --ink3:#9A9689;
+  --line:#D5D2C8; --line2:#E9E6DE;
+  --accent:#A8481A; --accent-bg:#F8EEE7; --accent-line:#E0BFAA;
+  --ok:#3D6647; --warn:#8A6A1F; --stop:#8C3A2E;
+  --mono:"Cascadia Mono",Consolas,"DejaVu Sans Mono",monospace;
+  --ui:"Segoe UI","Leelawadee UI","Noto Sans Thai",Tahoma,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#151519; --panel:#1C1C21; --sunk:#232329;
+    --ink:#E9E6E0; --ink2:#9C978D; --ink3:#6C6860;
+    --line:#33333A; --line2:#26262C;
+    --accent:#E5A272; --accent-bg:#2B211B; --accent-line:#5A4335;
+    --ok:#79A886; --warn:#C7A44E; --stop:#D08A7C;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151519; --panel:#1C1C21; --sunk:#232329;
+  --ink:#E9E6E0; --ink2:#9C978D; --ink3:#6C6860;
+  --line:#33333A; --line2:#26262C;
+  --accent:#E5A272; --accent-bg:#2B211B; --accent-line:#5A4335;
+  --ok:#79A886; --warn:#C7A44E; --stop:#D08A7C;
+}
+:root[data-theme="light"]{
+  --bg:#FAF9F6; --panel:#FFFFFF; --sunk:#F2F0EA;
+  --ink:#1B1A16; --ink2:#6B675D; --ink3:#9A9689;
+  --line:#D5D2C8; --line2:#E9E6DE;
+  --accent:#A8481A; --accent-bg:#F8EEE7; --accent-line:#E0BFAA;
+  --ok:#3D6647; --warn:#8A6A1F; --stop:#8C3A2E;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);
+  font-size:14px;line-height:1.6;padding-bottom:64px}
+h1,h2,h3{margin:0;font-weight:650;text-wrap:balance}
+.mono{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em}
+
+/* ---------- โครงหน้า ---------- */
+.wrap{display:grid;grid-template-columns:228px minmax(0,1fr) 316px;gap:0;
+  min-height:100vh;align-items:start}
+@media(max-width:1080px){.wrap{grid-template-columns:1fr}}
+
+/* ---------- รางซ้าย: การเดินทางของอาจารย์ ---------- */
+.rail{border-right:1px solid var(--line);padding:20px 0 40px;position:sticky;top:0;
+  align-self:start;max-height:100vh;overflow:auto}
+@media(max-width:1080px){.rail{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line)}}
+.rail h1{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);
+  padding:0 18px;margin-bottom:14px}
+.phase{padding:15px 18px 5px;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--ink3);border-top:1px solid var(--line2);margin-top:8px}
+.phase:first-of-type{border-top:0;margin-top:0}
+.step{display:grid;grid-template-columns:22px 1fr;gap:9px;align-items:baseline;
+  padding:7px 18px;cursor:pointer;border-left:2px solid transparent;color:var(--ink2)}
+.step:hover{background:var(--sunk)}
+.step.on{border-left-color:var(--accent);color:var(--ink);background:var(--sunk)}
+.step .no{font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.step.on .no{color:var(--accent)}
+.step .tt{font-size:13px;line-height:1.35}
+.step .rq{display:block;font-size:11px;color:var(--ink3);margin-top:2px}
+.step .nw{display:inline-block;font-size:10px;border:1px solid var(--accent-line);
+  color:var(--accent);padding:0 4px;margin-left:5px;vertical-align:1px}
+.railnote{padding:16px 18px 0;margin-top:14px;border-top:1px solid var(--line2);
+  font-size:11.5px;color:var(--ink3);line-height:1.65}
+
+/* ---------- กลาง: ตัว wireframe ---------- */
+.main{padding:24px 30px 60px;min-width:0}
+.hd{margin-bottom:4px;font-size:19px}
+.sub{color:var(--ink2);margin-bottom:20px;max-width:64ch}
+
+.wf{background:var(--panel);border:1px solid var(--line);padding:0;overflow:hidden}
+.wf + .wf{margin-top:18px}
+.wfbar{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line2);
+  background:var(--sunk);font-size:12.5px;color:var(--ink2)}
+.wfbar b{color:var(--ink);font-weight:600}
+.wfbody{padding:16px}
+.spacer{flex:1}
+
+/* กล่องเปล่าแบบ wireframe */
+.box{border:1px solid var(--line);padding:12px}
+.dash{border:1px dashed var(--line)}
+.ph{background:var(--line2);height:9px;border-radius:1px}
+.ph.s{height:7px}
+.stack{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grow{flex:1;min-width:0}
+.lbl{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin-bottom:5px}
+.fld{border:1px solid var(--line);padding:7px 9px;font-size:13px;color:var(--ink2);background:transparent}
+.fld.on{color:var(--ink);border-color:var(--ink3)}
+.btnw{border:1px solid var(--line);padding:6px 12px;font-size:12.5px;color:var(--ink2);display:inline-block}
+.btnw.pri{border-color:var(--ink);color:var(--ink);font-weight:600}
+.chip{border:1px solid var(--line);padding:2px 8px;font-size:11.5px;color:var(--ink2);border-radius:11px}
+.chip.on{border-color:var(--accent-line);background:var(--accent-bg);color:var(--accent)}
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{text-align:left;font-weight:600;color:var(--ink2);padding:7px 9px;border-bottom:1px solid var(--line);
+  font-size:11px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.tbl td{padding:7px 9px;border-bottom:1px solid var(--line2);vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.num{font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+.dim{color:var(--ink3);font-size:12px}
+.hint{font-size:12px;color:var(--ink2);margin-top:9px;padding-left:11px;border-left:2px solid var(--line)}
+
+/* หมุดจุดตัดสินใจ */
+.pin{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;
+  padding:0 4px;border-radius:9px;background:var(--accent-bg);color:var(--accent);
+  border:1px solid var(--accent-line);font-family:var(--mono);font-size:10.5px;
+  cursor:pointer;vertical-align:middle;margin-left:5px;font-weight:600}
+.pin:hover,.pin.on{background:var(--accent);color:var(--panel);border-color:var(--accent)}
+
+/* ---------- ขวา: จุดที่ต้องตัดสินใจ ---------- */
+.notes{border-left:1px solid var(--line);padding:24px 20px 60px;position:sticky;top:0;
+  align-self:start;max-height:100vh;overflow:auto}
+@media(max-width:1080px){.notes{position:static;max-height:none;border-left:0;border-top:1px solid var(--line)}}
+.notes h2{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:14px}
+.note{padding:11px 12px;border:1px solid var(--line2);margin-bottom:10px;font-size:12.5px;line-height:1.6}
+.note.on{border-color:var(--accent-line);background:var(--accent-bg)}
+.note .nh{display:flex;gap:7px;align-items:baseline;margin-bottom:4px}
+.note .nn{font-family:var(--mono);font-size:10.5px;color:var(--accent);font-weight:600}
+.note .nt{font-weight:600}
+.note .nb{color:var(--ink2)}
+.note .src{display:inline-block;margin-top:6px;font-family:var(--mono);font-size:10.5px;color:var(--ink3)}
+.note.settled{border-left:2px solid var(--ok)}
+.note.settled .nn{color:var(--ok)}
+
+/* ---------- จุดสถานะการตรวจ ---------- */
+.st{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink2);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--line)}
+.dot.done{background:var(--ok)}
+.dot.wait{background:var(--warn)}
+.dot.open{background:var(--accent)}
+.dot.manual{background:transparent;border:1px solid var(--ink3)}
+.dot.none{background:transparent;border:1px dashed var(--line)}
+tr.unset td{background:repeating-linear-gradient(135deg,transparent,transparent 5px,
+  var(--line2) 5px,var(--line2) 6px)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;padding-top:10px;
+  border-top:1px solid var(--line2)}
+
+/* ---------- ตารางสิทธิ์ ---------- */
+.perm{width:100%;border-collapse:collapse;font-size:12.5px}
+.perm th{text-align:left;font-weight:600;color:var(--ink2);padding:7px 9px;
+  border-bottom:1px solid var(--line);font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+.perm th.c,.perm td.c{text-align:center;width:96px}
+.perm td{padding:7px 9px;border-bottom:1px solid var(--line2)}
+.perm .y{color:var(--ok);font-weight:650}
+.perm .n{color:var(--stop);font-weight:650}
+.perm tr:last-child td{border-bottom:0}
+
+/* ---------- rubric variants ---------- */
+.rgrid{display:grid;gap:1px;background:var(--line2);border:1px solid var(--line);font-size:11.5px}
+.rgrid > div{background:var(--panel);padding:7px 8px}
+.rgrid .rh{background:var(--sunk);font-weight:600;font-size:10.5px;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--ink2)}
+.rgrid .rc{color:var(--ink2);line-height:1.5}
+.rgrid .rc.empty{color:var(--ink3);font-style:italic}
+.wizstep{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.wizstep .ws{border:1px solid var(--line);padding:3px 9px;font-size:11.5px;color:var(--ink3)}
+.wizstep .ws.on{border-color:var(--ink);color:var(--ink);font-weight:600}
+.wizstep .ws.done{color:var(--ink2)}
+.exthumb{border:1px solid var(--line);height:64px;display:flex;align-items:center;
+  justify-content:center;font-size:19px;background:var(--sunk)}
+
+/* ---------- แถบล่าง ---------- */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;align-items:center;gap:10px;
+  padding:9px 16px;background:var(--panel);border-top:1px solid var(--line);font-size:12.5px;flex-wrap:wrap}
+.bar b{font-weight:650}
+.bar .vb{border:1px solid var(--line);padding:4px 11px;cursor:pointer;color:var(--ink2);
+  background:transparent;font-family:inherit;font-size:12.5px}
+.bar .vb.on{border-color:var(--ink);color:var(--ink);font-weight:650}
+.bar .k{font-family:var(--mono);font-size:10.5px;color:var(--ink3);border:1px solid var(--line2);
+  padding:1px 5px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(prefers-reduced-motion:no-preference){.note{transition:background .12s,border-color .12s}}
+</style><div class="wrap">
+  <nav class="rail" id="rail"></nav>
+  <main class="main" id="main"></main>
+  <aside class="notes" id="notes"></aside>
+</div>
+<div class="bar" id="bar"></div>
+
+<script>
+/* ============================================================
+   ข้อมูลตัวอย่าง — นักศึกษาในวิชา 06016315 ภาค 1/2569
+   รอบที่ 1 — หลังอาจารย์ตอบคำถามนโยบาย 4 ข้อ (7 ส.ค. 69)
+   ============================================================ */
+const esc = s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const P = n=>`<span class="pin" data-pin="${n}">${n}</span>`;
+const ph = (w,c)=>`<div class="ph ${c||""}" style="width:${w}"></div>`;
+const dot = (k,txt)=>`<span class="st"><span class="dot ${k}"></span>${esc(txt)}</span>`;
+
+const S = {i:0, pin:null};
+
+/* เกณฑ์ชุดเดียวกับที่ใช้ในฝั่งอาจารย์ — สองฝั่งต้องอ่านเกณฑ์เดียวกันคำต่อคำ */
+const CRIT = [
+  {id:"C1", t:"การใช้สีตามระบบที่กำหนด", clo:"CLO3", w:15},
+  {id:"C2", t:"ความสม่ำเสมอของ typography", clo:"CLO3", w:15},
+  {id:"C3", t:"ระยะห่างและ spacing scale", clo:"CLO3", w:10},
+  {id:"C4", t:"ความชัดเจนของลำดับขั้นการใช้งาน", clo:"CLO2", w:25},
+  {id:"C5", t:"การจัดการข้อผิดพลาดและสถานะว่าง", clo:"CLO2", w:20},
+  {id:"C6", t:"ความสามารถในการเข้าถึง", clo:"CLO2", w:15},
+];
+const LV = ["ดีเยี่ยม","ดี","พอใช้","ต้องปรับปรุง"];
+
+/* ============================================================
+   01 — หน้าแรกของนักศึกษา
+   ============================================================ */
+const SC1 = {
+  t:"หน้าแรก — ของที่ต้องส่ง", phase:"ก่อนส่ง",
+  sub:"คำถามที่หน้าจอนี้ต้องตอบภายในหนึ่งวินาทีคือ “ตอนนี้ฉันค้างอะไรอยู่ และอันไหนใกล้ตาย”",
+  rq:"โจทย์ข้อ 5",
+  body:()=>`
+  <div class="wf">
+    <div class="wfbar"><b>ของที่ต้องส่ง</b><div class="spacer"></div>
+      <span class="chip on">เรียงตามกำหนดส่ง</span><span class="chip">แยกตามวิชา</span>${P(1)}</div>
+    <div class="wfbody">
+      <div class="scroll"><table class="tbl">
+        <tr><th>งาน</th><th>วิชา</th><th>กำหนดส่ง</th><th>สถานะ</th><th></th></tr>
+        <tr><td><b>Lab 07 · Design System</b> · งานกลุ่ม</td><td>06016315</td>
+          <td><b>พรุ่งนี้ 23:59</b></td>
+          <td>${dot("none","ยังไม่ส่ง")}</td><td><span class="btnw pri">ส่งงาน</span></td></tr>
+        <tr><td><b>Lab 06 · Wireframe</b> · งานเดี่ยว</td><td>06016315</td>
+          <td>เลยมาแล้ว 2 วัน</td>
+          <td>${dot("wait","ยังไม่ส่ง · ถ้าส่งวันนี้จะถูกหัก 4 จาก 20")}${P(2)}</td>
+          <td><span class="btnw">ส่งงาน</span></td></tr>
+        <tr><td><b>Lab 05 · User Flow</b> · งานเดี่ยว</td><td>06016315</td>
+          <td>ส่งแล้วเมื่อ 3 ส.ค.</td>
+          <td>${dot("open","ส่งแล้ว · ส่งใหม่ได้จนกว่าอาจารย์จะเริ่มตรวจ")}${P(3)}</td>
+          <td><span class="btnw">ส่งใหม่</span></td></tr>
+        <tr><td><b>Lab 04 · Persona</b> · งานกลุ่ม</td><td>06016315</td>
+          <td>ปิดรับแล้ว</td>
+          <td>${dot("done","ตรวจแล้ว · 17.5 / 20")}</td><td><span class="btnw">ดูผล</span></td></tr>
+        <tr><td>${ph("58%")}</td><td>${ph("60%","s")}</td><td>${ph("70%","s")}</td>
+          <td>${ph("80%","s")}</td><td></td></tr>
+      </table></div>
+      <div class="legend">
+        ${dot("none","ยังไม่ส่ง")} ${dot("wait","เลยกำหนด")} ${dot("open","ส่งแล้ว แก้ได้")}
+        ${dot("done","ตรวจแล้ว")} ${dot("manual","ส่งแล้ว รอตรวจ")}
+      </div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>วิชาที่ลงทะเบียน ภาค 1/2569</b></div>
+    <div class="wfbody">
+      <div class="row">
+        <span class="chip on">06016315 · การออกแบบส่วนติดต่อผู้ใช้ — 12 / 21 ชิ้น · 68.5 คะแนนสะสม</span>
+        <span class="chip">${ph("120px","s")}</span>
+      </div>
+      <div class="hint">คะแนนสะสมคือผลรวมของงานที่ <b>อาจารย์ยืนยันแล้ว</b> เท่านั้น
+        งานที่ระบบตรวจเสร็จแต่ผู้สอนยังไม่ยืนยัน จะยังไม่ถูกนับ${P(4)}</div>
+    </div>
+  </div>`,
+  notes:[
+    {t:"หน่วยของนักศึกษาคือเดดไลน์ ไม่ใช่รายวิชา",
+     b:"ตรงกับที่เจอฝั่งอาจารย์เป๊ะ ๆ — อาจารย์ขอ “คิวงานรอตรวจของทั้งเทอม” เพราะหน่วยของงานจริงคือของที่ค้างอยู่ตอนนี้ ฝั่งนักศึกษาก็เหมือนกัน ถ้าบังคับให้คลิกเข้าวิชาก่อนจึงจะเห็นว่าค้างอะไร คือการเรียงข้อมูลตามโครงสร้างของระบบ ไม่ใช่ตามคำถามของผู้ใช้",
+     src:"โจทย์ข้อ 5 · ขนานกับ ticket 19 หน้าจอ 09"},
+    {t:"แสดงค่าปรับล่วงหน้า ไม่ใช่หลังส่ง", settled:true,
+     b:"กติกาส่งสายเป็นเลขคณิตล้วน (หักวันละ 10% ของคะแนนเต็ม) ระบบจึงคำนวณได้ตั้งแต่ก่อนกดส่ง การบอกทีหลังทำให้นักศึกษารู้สึกว่าถูกลงโทษโดยไม่รู้ตัว ทั้งที่ระบบรู้ล่วงหน้าอยู่แล้ว",
+     src:"ticket 25 · กติกาส่งสายจากเอกสาร TA"},
+    {t:"เส้นตายของการส่งใหม่ไม่ใช่กำหนดส่ง แต่คือตอนอาจารย์เริ่มตรวจ", settled:true,
+     b:"อาจารย์ยอมให้ส่งใหม่ได้แม้เลยกำหนด โดยแลกกับค่าปรับ — กำหนดส่งจึงเลิกทำหน้าที่ปิดประตูและเปลี่ยนเป็นตัวตั้งราคาแทน ประตูที่ปิดจริงคือตอนอาจารย์กดสั่งตรวจทั้งชุด ซึ่งเป็นเหตุการณ์ที่นักศึกษาไม่รู้ล่วงหน้า หน้าจอจึงต้องแสดงสถานะนี้ตลอดเวลา ไม่ใช่แสดงเป็นวันที่",
+     src:"อาจารย์ตอบ 7 ส.ค. 69 (รอบสอง)"},
+    {t:"คะแนนสะสมนับเฉพาะที่ผู้สอนยืนยันแล้ว", settled:true,
+     b:"ticket 12 ตัดสินว่าธง is_authoritative ย้ายมาที่อาจารย์เมื่อตรวจ ถ้าหน้าจอนักศึกษานับคะแนนที่ AI ให้เข้าไปในยอดสะสม เท่ากับเผยคะแนน AI ทางอ้อม และตัวเลขจะขยับเองทีหลังโดยไม่มีคำอธิบาย",
+     src:"ticket 12"},
+  ]
+};
+
+/* ============================================================
+   02 — หน้ารายวิชา
+   ============================================================ */
+const SC2 = {
+  t:"รายวิชา — ตารางรายสัปดาห์", phase:"ก่อนส่ง",
+  sub:"ตารางเดียวกับที่อาจารย์กรอกในหน้าจอ 06 ฝั่งอาจารย์ แต่เพิ่มคอลัมน์ว่า “ฉันส่งหรือยัง ได้เท่าไร”",
+  rq:"โจทย์ข้อ 5, 12",
+  body:()=>`
+  <div class="wf">
+    <div class="wfbar"><b>06016315 · การออกแบบส่วนติดต่อผู้ใช้</b><div class="spacer"></div>
+      <span class="chip on">ตารางสัปดาห์</span><span class="chip">คะแนนของฉัน</span>
+      <span class="chip">เอกสารประกอบ</span></div>
+    <div class="wfbody">
+      <div class="scroll"><table class="tbl">
+        <tr><th>สัปดาห์</th><th>หัวข้อการสอน</th><th>กิจกรรมการประเมิน</th>
+          <th>สถานะของฉัน</th><th class="num">คะแนน</th></tr>
+        <tr><td>4</td><td>Persona และ Empathy Map</td><td>Lab 04 · Persona (กลุ่ม) · 20</td>
+          <td>${dot("done","ตรวจแล้ว")}</td><td class="num">17.5</td></tr>
+        <tr><td>5</td><td>User Flow และ Information Architecture</td><td>Lab 05 · User Flow (เดี่ยว) · 20</td>
+          <td>${dot("open","ส่งแล้ว รอตรวจ")}</td><td class="num">—</td></tr>
+        <tr><td>6</td><td>Wireframe ความละเอียดต่ำ</td><td>Lab 06 · Wireframe (เดี่ยว) · 20</td>
+          <td>${dot("wait","ยังไม่ส่ง · เลยกำหนด 2 วัน")}</td><td class="num">—</td></tr>
+        <tr><td><b>7</b></td><td><b>Design System และ Component</b></td>
+          <td><b>Lab 07 · Design System (กลุ่ม) · 20</b></td>
+          <td>${dot("none","ยังไม่ส่ง · เหลือ 1 วัน")}</td><td class="num">—</td></tr>
+        <tr><td>8</td><td>สอบกลางภาค</td><td>สอบกลางภาค · 20</td>
+          <td><span class="dim">ยังไม่ถึง</span></td><td class="num">—</td></tr>
+        <tr><td>9</td><td>${ph("70%")}</td><td>${ph("60%","s")}</td>
+          <td>${ph("50%","s")}</td><td class="num">${ph("40%","s")}</td></tr>
+      </table></div>
+      <div class="hint">สัปดาห์ที่ยังไม่ถึงแสดงหัวข้อและกิจกรรมได้ <b>แต่กดส่งไม่ได้</b> —
+        เห็นล่วงหน้าเพื่อวางแผน ไม่ใช่เพื่อส่งล่วงหน้า${P(1)}</div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>คะแนนของฉันในวิชานี้</b><div class="spacer"></div>
+      <span class="dim">แท็บที่สองของหน้าเดียวกัน</span></div>
+    <div class="wfbody">
+      <div class="rgrid">
+        <div class="rc"><div class="rh">ยืนยันแล้ว</div><b>68.5</b> <span class="dim">/ 100</span></div>
+        <div class="rc"><div class="rh">รอผู้สอนยืนยัน</div><b>—</b>
+          <span class="dim">1 ชิ้น</span>${P(2)}</div>
+        <div class="rc"><div class="rh">ยังไม่ส่ง</div><b>2</b> <span class="dim">ชิ้น</span></div>
+      </div>
+      <div class="hint">ตัวเลข “รอผู้สอนยืนยัน” เป็น <b>จำนวนชิ้น ไม่ใช่คะแนน</b> โดยตั้งใจ —
+        ถ้าแสดงเป็นคะแนนก็คือการเผยคะแนนที่ AI ให้ ซึ่ง ticket 12 ตัดสินว่าไม่เผย</div>
+    </div>
+  </div>`,
+  notes:[
+    {t:"ใช้ตารางสัปดาห์โครงเดียวกับฝั่งอาจารย์", settled:true,
+     b:"อาจารย์กรอกตารางนี้ครั้งเดียวในหน้าจอ 06 แล้วนักศึกษาเห็นตารางเดียวกัน ถ้าออกแบบเป็นคนละโครง จะเกิดสภาพที่อาจารย์กับนักศึกษาพูดถึงคนละสิ่งด้วยชื่อเดียวกัน และอาจารย์ต้องกรอกซ้ำสองที่",
+     src:"ticket 19 หน้าจอ 06"},
+    {t:"เห็นล่วงหน้าได้ แต่ส่งล่วงหน้าไม่ได้",
+     b:"เปิดให้ส่งก่อนสัปดาห์ถึงจะดูใจดี แต่ทำให้เกิดงานที่ส่งก่อนโจทย์ฉบับสุดท้ายถูกแก้ ซึ่งกลายเป็นข้อพิพาทที่ไม่มีทางตัดสินได้ — ยกเว้นอาจารย์เปิดเอง",
+     src:"ข้อเสนอ · รออาจารย์ยืนยัน"},
+    {t:"ช่องคะแนนที่รอตรวจแสดงเป็นจำนวนชิ้น ไม่ใช่คะแนน", settled:true,
+     b:"เป็นจุดรั่วที่มองไม่เห็นง่ายที่สุดของกติกา “นักศึกษาไม่เห็นคะแนน AI” — ถ้าหน้าไหนก็ตามแสดงยอดรวมที่รวมคะแนน AI เข้าไป นักศึกษาลบออกเองได้ทันที",
+     src:"ticket 12"},
+  ]
+};
+
+/* ============================================================
+   03 — หน้าส่งงาน
+   ============================================================ */
+const SC3 = {
+  t:"ส่งงาน", phase:"ก่อนส่ง", isNew:true,
+  sub:"หน้าจอที่ต้องระวังที่สุดของทั้งฝั่งนักศึกษา — ทุกความผิดพลาดที่นี่กลายเป็นงานของอาจารย์ในภายหลัง",
+  rq:"โจทย์ข้อ 5",
+  body:()=>`
+  <div class="wf">
+    <div class="wfbar"><b>Lab 07 · Design System</b> <span class="dim">— งานกลุ่ม · เต็ม 20 คะแนน</span>
+      <div class="spacer"></div><span class="chip on">เหลือ 1 วัน 6 ชั่วโมง</span></div>
+    <div class="wfbody">
+      <div class="lbl">โจทย์</div>
+      <div class="box">${ph("100%")}${ph("94%")}${ph("70%")}
+        <div class="row" style="margin-top:8px"><span class="btnw">เปิดใบงานฉบับเต็ม</span></div></div>
+
+      <div class="lbl" style="margin-top:16px">เกณฑ์ที่จะใช้ตรวจงานชิ้นนี้${P(1)}</div>
+      <div class="scroll"><table class="tbl">
+        <tr><th>เกณฑ์</th><th class="num">น้ำหนัก</th>
+          ${LV.map(l=>`<th>${l}</th>`).join("")}</tr>
+        ${CRIT.map(c=>`<tr>
+          <td><b>${c.id}</b> · ${c.t} <span class="dim">${c.clo}</span></td>
+          <td class="num">${c.w}%</td>
+          ${LV.map(()=>`<td>${ph("100%","s")}</td>`).join("")}</tr>`).join("")}
+      </table></div>
+      <div class="hint">เกณฑ์ทุกข้อทุกระดับเปิดให้อ่านก่อนส่ง — เป็นเกณฑ์ <b>ฉบับเดียวกับที่ใช้ตรวจจริง</b>
+        ถ้าอาจารย์แก้เกณฑ์หลังจากนี้ งานที่ส่งไปแล้วยังถูกตรวจด้วยฉบับที่ประกาศไว้ตอนส่ง${P(2)}</div>
+
+      <div class="lbl" style="margin-top:18px">ลิงก์ไฟล์ Figma</div>
+      <div class="fld on">https://www.figma.com/design/aB3xY/Lab07-Group05
+        <div class="spacer"></div><span class="btnw">ตรวจสอบลิงก์</span></div>
+      <div class="hint">${dot("done","ตรวจแล้วเมื่อ 30 วินาทีที่แล้ว — ระบบเปิดไฟล์นี้ได้ พบ 14 หน้าจอ")}${P(3)}</div>
+
+      <div class="lbl" style="margin-top:14px">ไฟล์แนบ <span class="dim">— ไม่บังคับ</span></div>
+      <div class="fld">ลากไฟล์มาวาง หรือกดเพื่อเลือก
+        <div class="spacer"></div><span class="dim">.pdf .png .jpg · ไม่เกิน 25 MB ต่อไฟล์ · ไม่เกิน 5 ไฟล์</span></div>
+      <div class="hint">ข้อจำกัดเขียนไว้ <b>ก่อน</b> เลือกไฟล์ ไม่ใช่ขึ้นเป็นข้อความแดงหลังอัปโหลดล้มเหลว</div>
+
+      <div class="lbl" style="margin-top:18px">สมาชิกกลุ่ม</div>
+      <div class="row">
+        <span class="chip on">65010001 · ธนา (ฉัน)</span>
+        <span class="chip on">65010014 · ปรีดา</span>
+        <span class="chip on">65010027 · สุนิสา</span>
+        <span class="btnw">แก้ไขกลุ่ม</span>
+      </div>
+
+      <div class="box" style="margin-top:18px">
+        <b>ส่งตอนนี้ = ตรงเวลา ได้คะแนนเต็ม 20</b>
+        <div class="dim" style="margin-top:6px">ถ้าส่งหลัง 8 ส.ค. 23:59 จะถูกหักวันละ 2 คะแนน
+          (10% ของคะแนนเต็ม) · <b>เกิน 3 วันได้ 0 คะแนน และระบบจะไม่ตรวจงานให้</b>${P(4)}
+          <br>ตัวเลขนี้คิดจาก <b>เวลาของครั้งที่ถูกใช้ตรวจ</b> ไม่ใช่ครั้งแรกที่ส่ง —
+          ส่งใหม่เมื่อไรก็คิดค่าปรับของวันนั้น</div>
+      </div>
+
+      <div class="row" style="margin-top:14px">
+        <span class="btnw pri">ส่งงาน</span>
+        <span class="dim">ส่งซ้ำได้ไม่จำกัด <b>รวมถึงหลังเลยกำหนด</b> · ระบบใช้ครั้งล่าสุดตรวจ ·
+          <b>ค่าปรับคิดตามเวลาของครั้งที่ถูกใช้ตรวจ</b> — ส่งใหม่ช้าลงหนึ่งวันคือจ่ายเพิ่ม 2 คะแนน ·
+          ปิดรับเมื่ออาจารย์เริ่มตรวจงานชุดนี้${P(5)}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>ประวัติการส่งของกลุ่มนี้</b></div>
+    <div class="wfbody">
+      <div class="scroll"><table class="tbl">
+        <tr><th>ครั้งที่</th><th>เวลา</th><th>ผู้กดส่ง</th><th>หลักฐานที่แช่แข็งไว้</th><th>ใช้ตรวจ</th></tr>
+        <tr><td>2</td><td>7 ส.ค. 14:22</td><td>ธนา</td>
+          <td>14 หน้าจอ · Figma version 8f3a1</td><td><b>ใช่ — ครั้งล่าสุด</b></td></tr>
+        <tr><td>1</td><td>6 ส.ค. 21:05</td><td>ปรีดา</td>
+          <td>11 หน้าจอ · Figma version 2c9e7</td><td><span class="dim">ไม่ใช่</span></td></tr>
+      </table></div>
+      <div class="hint">ทุกครั้งที่กดส่ง ระบบ <b>ถ่ายสำเนาไฟล์ Figma เก็บไว้ทันที</b>
+        ครั้งเก่ายังอยู่ครบไม่ถูกลบ แต่ใช้ครั้งล่าสุดตรวจ — แก้ไฟล์ Figma หลังกดส่งจึงไม่มีผลกับคะแนน
+        จนกว่าจะกดส่งใหม่${P(6)}</div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>ยืนยันก่อนส่งใหม่</b> <span class="dim">— ป๊อปอัป</span>
+      <div class="spacer"></div><span class="chip on">แลกคะแนนเพื่อแก้งาน</span>${P(7)}</div>
+    <div class="wfbody">
+      <div class="box"><b>ส่งใหม่ตอนนี้จะทำให้คะแนนเต็มที่เป็นไปได้ลดลง</b>
+        <div class="scroll" style="margin-top:8px"><table class="tbl">
+          <tr><th></th><th>ครั้งที่ใช้ตรวจตอนนี้</th><th>ถ้าส่งใหม่ตอนนี้</th></tr>
+          <tr><td>เวลาส่ง</td><td>7 ส.ค. 14:22</td><td>10 ส.ค. 09:15</td></tr>
+          <tr><td>สถานะ</td><td>ตรงเวลา</td><td>ช้า 2 วัน</td></tr>
+          <tr><td>หักส่งช้า</td><td class="num">0</td><td class="num">−4</td></tr>
+          <tr><td><b>คะแนนเต็มที่เป็นไปได้</b></td><td class="num"><b>20</b></td>
+            <td class="num"><b>16</b></td></tr>
+        </table></div>
+        <div class="dim" style="margin-top:8px">ครั้งเดิมยังถูกเก็บไว้เป็นหลักฐาน
+          แต่จะไม่ถูกใช้คิดคะแนนอีก</div>
+        <div class="row" style="margin-top:10px">
+          <span class="btnw pri">ยืนยัน ส่งใหม่และรับค่าปรับ</span>
+          <span class="btnw">ยกเลิก</span></div></div>
+
+      <div class="box" style="margin-top:12px"><b>ส่งใหม่ไม่ได้ — อาจารย์เริ่มตรวจงานชุดนี้แล้ว</b>
+        <div class="dim" style="margin-top:5px">อาจารย์กดสั่งตรวจเมื่อ 9 ส.ค. 10:00
+          หลังจากนั้นระบบปิดรับการส่งใหม่ เพราะงานที่ตรวจไปแล้วจะต้องถูกตรวจซ้ำทั้งชุด —
+          ติดต่ออาจารย์โดยตรงถ้ามีเหตุจำเป็น${P(8)}</div></div>
+
+      <div class="box" style="margin-top:12px"><b>ส่งใหม่ไม่ได้ — จะทำให้คะแนนที่มีอยู่หายไป</b>
+        <div class="dim" style="margin-top:5px">งานที่คุณส่งไว้เมื่อ 7 ส.ค. ยังได้คะแนนตามปกติ
+          แต่วันนี้เลยกำหนดมาแล้ว 4 วัน ถ้าส่งใหม่จะได้ 0 ตามกติกาของรายวิชา
+          ระบบจึงไม่ให้ส่งใหม่ — ติดต่ออาจารย์ถ้ามีเหตุจำเป็น${P(9)}</div></div>
+    </div>
+  </div>`,
+  notes:[
+    {t:"ตัดสินแล้ว: เห็นเกณฑ์เต็มทุกระดับก่อนส่ง", settled:true,
+     b:"อาจารย์เลือกแบบเปิดเต็ม ซึ่งเป็นหลักพื้นฐานของ rubric ที่ดีและของการประเมินตามสภาพจริง ผลข้างเคียงที่ต้องรับคือเกณฑ์กลายเป็นเอกสารสาธารณะ เขียนกำกวมแล้วจะถูกทักท้วง — ซึ่งกลับเป็นแรงกดดันที่ดีต่อคุณภาพเกณฑ์",
+     src:"อาจารย์ตอบ 7 ส.ค. 69"},
+    {t:"เกณฑ์ถูกตรึงเวอร์ชันไว้ที่เวลาส่ง", settled:true,
+     b:"ticket 10 ทำ RubricVersion ไว้แล้ว หน้านี้แค่ทำให้นักศึกษามองเห็นสัญญานั้น ถ้าไม่บอก การที่อาจารย์แก้เกณฑ์กลางเทอมจะกลายเป็นเรื่องร้องเรียน",
+     src:"ticket 10, 12"},
+    {t:"ตรวจลิงก์ก่อนส่ง ไม่ใช่หลังส่ง",
+     b:"ปุ่มนี้คือจุดที่กันงานพังทั้งเทอมได้ด้วยการคลิกเดียว ลิงก์ Figma ที่ไม่ได้แชร์สิทธิ์ให้บัญชีของระบบคือความล้มเหลวที่พบบ่อยที่สุดและแก้ง่ายที่สุด แต่ถ้ารู้ตอนตรวจก็สายไปแล้ว — ต้องบอกด้วยว่าเห็นกี่หน้าจอ เพราะ “เปิดได้แต่ว่าง” คือความล้มเหลวอีกแบบที่เงียบกว่า",
+     src:"ticket 02 · ticket 17 D7"},
+    {t:"เกิน 3 วันแล้วระบบไม่ตรวจให้ ต้องบอกก่อนส่ง", settled:true,
+     b:"กติกาจากเอกสาร TA คือเกิน 3 วันได้ 0 และไม่ต้องเรียก AI เลย ถ้าไม่เขียนไว้ตรงนี้ นักศึกษาจะส่งแล้วรอผลที่ไม่มีวันมา — และจะกลายเป็นคำถามที่อาจารย์ต้องตอบเป็นรายคน",
+     src:"ticket 25"},
+    {t:"ตัดสินแล้ว: ส่งใหม่ได้แม้เลยกำหนด โดยแลกกับคะแนน", settled:true,
+     b:"อาจารย์ยอมให้ส่งใหม่ แต่ต้องมีราคา — กลไกที่เลือกคือใช้กติกาหักวันละ 10% ที่มีอยู่แล้ว โดยคิดจากเวลาของครั้งที่ถูกใช้ตรวจ ไม่ต้องประดิษฐ์สกุลเงินใหม่ ไม่ต้องจำกัดจำนวนครั้ง เพราะการส่งใหม่ช้าลงหนึ่งวันคือการจ่ายเพิ่มอยู่แล้วโดยอัตโนมัติ และตอบคำถามที่ยากที่สุดได้ในตัว คือคนที่ส่งตรงเวลาแล้วอยากแก้ต้องจ่ายอะไร — จ่ายด้วยสถานะตรงเวลาของตัวเอง",
+     src:"อาจารย์ตอบ 7 ส.ค. 69 (รอบสอง)"},
+    {t:"แช่แข็งหลักฐานทุกครั้งที่กดส่ง", settled:true,
+     b:"ticket 17 D7 ตัดสินว่าดึง Figma ครั้งเดียวตอนกดส่งแล้วใช้สำเนานั้นตลอด ประวัติการส่งจึงต้องแสดงให้เห็นว่าแต่ละครั้งจับภาพอะไรไว้ — เป็นทั้งการอธิบายกติกาและเป็นหลักฐานเวลามีข้อพิพาท",
+     src:"ticket 17 D7"},
+    {t:"ต้องเห็นราคาเป็นตัวเลขก่อนกด ไม่ใช่หลังกด",
+     b:"เมื่อการส่งใหม่มีราคา การกดส่งใหม่ก็กลายเป็นธุรกรรม ไม่ใช่การบันทึกไฟล์ ตารางเทียบก่อน/หลังจึงเป็นส่วนหนึ่งของกลไก ไม่ใช่ของประดับ กรณีที่อันตรายที่สุดคือคนที่ส่งตรงเวลาไว้แล้วอยากแก้นิดเดียว เพราะเขากำลังจะจ่ายด้วยสถานะตรงเวลาของตัวเองโดยไม่ทันคิด",
+     src:"ผลจากการตัดสินข้างต้น"},
+    {t:"ประตูที่สอง — ปิดรับเมื่ออาจารย์เริ่มตรวจ", settled:true,
+     b:"ค่าปรับปกป้องความยุติธรรมระหว่างนักศึกษา แต่ไม่ได้ปกป้องเวลาของอาจารย์เลย ถ้าส่งใหม่ได้เรื่อย ๆ หลังตรวจไปแล้ว เท่ากับบังคับให้ตรวจซ้ำได้ไม่จำกัดโดยจ่ายด้วยคะแนนของตัวเอง ซึ่งไม่ใช่ทรัพยากรที่ขาดแคลนในโครงการนี้ จุดตัดที่เป็นธรรมชาติที่สุดคือเหตุการณ์ที่มีอยู่แล้วในผังของ ticket 17 คือตอนอาจารย์กดสั่งตรวจทั้งชุด",
+     src:"ticket 17 D7 · ticket 27"},
+    {t:"ห้ามให้การคลิกครั้งเดียวทำลายคะแนนที่มีอยู่", settled:true,
+     b:"เกิน 3 วันได้ 0 ตามกติกา ถ้าคนที่ส่งตรงเวลาไว้แล้วกดส่งใหม่ในวันที่ 4 เขาจะเสียคะแนนทั้งหมดจากการคลิกครั้งเดียว เป็นการกระทำที่ย้อนกลับไม่ได้และผู้ใช้ไม่ได้ตั้งใจ ระบบต้องปฏิเสธ ไม่ใช่แค่เตือนแล้วปล่อยผ่าน",
+     src:"ticket 25 · ผลจากการตัดสินข้างต้น"},
+  ]
+};
+
+/* ============================================================
+   04 — จัดกลุ่ม
+   ============================================================ */
+const SC4 = {
+  t:"จัดกลุ่มสำหรับงานชิ้นนี้", phase:"ก่อนส่ง",
+  sub:"จุดที่ผู้ใช้เข้าใจผิดได้ง่ายที่สุดในระบบทั้งหมด — กลุ่มผูกกับ “ชิ้นงาน” ไม่ใช่กับ “วิชา”",
+  rq:"โจทย์ข้อ 6",
+  body:()=>`
+  <div class="wf">
+    <div class="wfbar"><b>กลุ่มของ Lab 07 · Design System</b><div class="spacer"></div>
+      <span class="chip on">งานชิ้นนี้เท่านั้น</span>${P(1)}</div>
+    <div class="wfbody">
+      <div class="box">
+        <b>กลุ่มนี้ใช้กับ Lab 07 เท่านั้น</b>
+        <div class="dim" style="margin-top:5px">งานชิ้นอื่นในวิชานี้จัดกลุ่มแยกกัน —
+          ถ้าจะใช้ทีมเดิม กดปุ่ม “ใช้ทีมเดิมจาก Lab 04” ด้านล่าง</div>
+      </div>
+
+      <div class="lbl" style="margin-top:16px">สมาชิก</div>
+      <div class="scroll"><table class="tbl">
+        <tr><th>รหัส</th><th>ชื่อ</th><th>เข้ากลุ่มเมื่อ</th><th>ใครเพิ่ม</th><th></th></tr>
+        <tr><td>65010001</td><td>ธนา <span class="dim">(ฉัน)</span></td><td>7 ส.ค. 13:40</td>
+          <td><span class="dim">สร้างกลุ่ม</span></td><td></td></tr>
+        <tr><td>65010014</td><td>ปรีดา</td><td>7 ส.ค. 13:41</td><td>ธนา${P(2)}</td>
+          <td><span class="btnw">นำออก</span></td></tr>
+        <tr><td>65010027</td><td>สุนิสา</td><td>7 ส.ค. 13:41</td><td>ธนา</td>
+          <td><span class="btnw">นำออก</span></td></tr>
+      </table></div>
+
+      <div class="lbl" style="margin-top:14px">เพิ่มสมาชิก</div>
+      <div class="fld">พิมพ์รหัสนักศึกษาหรือชื่อ
+        <div class="spacer"></div><span class="btnw">เพิ่ม</span></div>
+      <div class="hint">เพิ่มได้เลยโดยไม่ต้องรอเพื่อนกดตอบรับ <b>แต่ระบบบันทึกว่าใครเพิ่มใครเมื่อไร
+        และเพื่อนเห็นทันทีในหน้าแรกของตัวเอง</b> · ถ้าถูกเพิ่มโดยไม่ได้ตกลงกัน กดออกจากกลุ่มเองได้${P(3)}</div>
+
+      <div class="row" style="margin-top:14px">
+        <span class="btnw">ใช้ทีมเดิมจาก Lab 04</span>
+        <span class="btnw">ออกจากกลุ่มนี้</span>
+        <div class="spacer"></div>
+        <span class="dim">แก้ไขกลุ่มได้จนถึงกำหนดส่ง</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>กรณีที่ระบบต้องกัน</b> <span class="dim">— ป๊อปอัปเตือน</span></div>
+    <div class="wfbody">
+      <div class="box"><b>เพิ่มปรีดาไม่ได้</b>
+        <div class="dim" style="margin-top:5px">ปรีดาอยู่ในกลุ่มอื่นของ Lab 07 แล้ว (กลุ่มของ ณัฐพล)
+          หนึ่งคนอยู่ได้กลุ่มเดียวต่อหนึ่งชิ้นงาน — ให้ปรีดากดออกจากกลุ่มเดิมก่อน
+          แล้วลองใหม่</div></div>
+      <div class="box" style="margin-top:10px"><b>ออกจากกลุ่มไม่ได้</b>
+        <div class="dim" style="margin-top:5px">กลุ่มนี้ส่งงานไปแล้วเมื่อ 7 ส.ค. 14:22
+          ถ้าต้องการแก้สมาชิก ให้แก้แล้วกดส่งใหม่ก่อนกำหนดส่ง หรือติดต่ออาจารย์${P(4)}</div></div>
+    </div>
+  </div>`,
+  notes:[
+    {t:"กลุ่มผูกกับชิ้นงาน ไม่ใช่กับวิชา", settled:true,
+     b:"ticket 11 ตัดสินไว้แล้ว หน้าจอนี้มีหน้าที่เดียวคือทำให้เรื่องนี้เข้าใจผิดไม่ได้ — จึงเขียนไว้ทั้งบนแถบหัว ในกล่องคำอธิบาย และในชื่อของหน้าจอเอง เพราะเป็นความเข้าใจผิดที่แพงที่สุด (คะแนนไปลงผิดคน)",
+     src:"ticket 11"},
+    {t:"ไม่มีขั้นตอบรับคำเชิญ แต่มีการบันทึกว่าใครเพิ่ม", settled:true,
+     b:"ticket 11 เลือกทางนี้เพราะขั้นตอบรับทำให้กลุ่มค้างครึ่ง ๆ กลาง ๆ ตอนใกล้เดดไลน์ ซึ่งอันตรายกว่า การบันทึกผู้เพิ่มบวกกับการถอนตัวเองได้ ให้ผลเดียวกันโดยไม่บล็อกการส่ง",
+     src:"ticket 11"},
+    {t:"การถอนตัวเองต้องมีอยู่จริง",
+     b:"เป็นคู่ตรงข้ามที่จำเป็นของการเพิ่มโดยไม่ต้องขออนุญาต ถ้าเพิ่มได้ฟรีแต่ออกไม่ได้ ระบบก็เปิดช่องให้ลากคนเข้ากลุ่มเพื่อเกาะคะแนน",
+     src:"ผลจากการตัดสินข้างต้น"},
+    {t:"ล็อกกลุ่มหลังส่ง แต่ยังส่งใหม่ได้",
+     b:"ถ้าปล่อยให้แก้สมาชิกหลังส่งโดยไม่ส่งใหม่ จะเกิดสภาพที่หลักฐานถูกแช่แข็งไว้กับรายชื่อชุดหนึ่ง แต่คะแนนไปลงอีกชุดหนึ่ง — สืบย้อนไม่ได้ ขัดกับ ticket 12",
+     src:"ticket 12 · ticket 17 D7"},
+  ]
+};
+
+/* ============================================================
+   05 — หลังกดส่ง
+   ============================================================ */
+const SC5 = {
+  t:"หลังกดส่ง — สถานะและกรณีที่ผิดพลาด", phase:"ตอนส่ง", isNew:true,
+  sub:"ข้อกำหนดจาก ticket 17 D7: การส่งงานกับการดึงหลักฐานเป็นคนละเรื่องกัน ดึงไม่ได้ต้องไม่ทำให้ส่งไม่สำเร็จ",
+  rq:"โจทย์ข้อ 5 · ticket 17 D7",
+  body:()=>`
+  <div class="wf">
+    <div class="wfbar"><b>กรณีปกติ</b><div class="spacer"></div>${dot("done","ส่งสำเร็จ")}</div>
+    <div class="wfbody">
+      <div class="box"><b>ส่งงานสำเร็จ · 7 ส.ค. 14:22 · ตรงเวลา</b>
+        <div class="dim" style="margin-top:6px">ระบบเก็บสำเนาไฟล์ Figma ไว้แล้ว 14 หน้าจอ
+          (version 8f3a1) — สำเนานี้คือสิ่งที่จะถูกตรวจ การแก้ไฟล์ต้นฉบับหลังจากนี้ไม่มีผล
+          จนกว่าจะกดส่งใหม่</div>
+        <div class="row" style="margin-top:10px">
+          <span class="btnw">ดูสำเนาที่ระบบเก็บไว้</span>${P(1)}
+          <span class="btnw">ส่งใหม่</span></div></div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>กรณีที่ต้องออกแบบให้ดีที่สุด</b><div class="spacer"></div>
+      ${dot("wait","ส่งสำเร็จ แต่ดึงหลักฐานไม่ได้")}${P(2)}</div>
+    <div class="wfbody">
+      <div class="box">
+        <b>ส่งงานสำเร็จแล้ว — แต่ระบบยังเปิดไฟล์ Figma ของคุณไม่ได้</b>
+        <div class="dim" style="margin-top:6px">
+          <b>งานของคุณถูกบันทึกว่าส่งตรงเวลาแล้ว ไม่ต้องกังวลเรื่องกำหนดส่ง</b>
+          แต่ระบบยังตรวจไม่ได้จนกว่าจะเปิดไฟล์ได้ · ทำสามขั้นนี้แล้วกด “ลองอีกครั้ง”
+          <br>1. เปิดไฟล์ใน Figma กด Share
+          <br>2. เพิ่ม <span class="mono">grading-bot@kmitl.ac.th</span> เป็นผู้ดูได้ (can view)
+          <br>3. กลับมากดปุ่มด้านล่าง — ถ้ายังไม่ได้ ระบบจะลองเองอีก 3 ครั้งใน 1 ชั่วโมง
+             และแจ้งอาจารย์ถ้ายังไม่สำเร็จ${P(3)}
+        </div>
+        <div class="row" style="margin-top:10px">
+          <span class="btnw pri">ลองอีกครั้ง</span>
+          <span class="btnw">แนบไฟล์ PDF แทนไปก่อน</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>ข้อความแจ้งข้อผิดพลาดที่พบบ่อย</b>
+      <span class="dim">— เขียนไว้จริง ไม่ใช่ระบุว่า “แสดง error”</span></div>
+    <div class="wfbody">
+      <div class="scroll"><table class="tbl">
+        <tr><th>สถานการณ์</th><th>ข้อความที่แสดง</th></tr>
+        <tr><td>ลิงก์ไม่ใช่ลิงก์ Figma</td>
+          <td>ลิงก์นี้ไม่ใช่ลิงก์ไฟล์ Figma — ต้องขึ้นต้นด้วย figma.com/design/ หรือ figma.com/file/
+            ถ้าคัดลอกมาจากช่อง Prototype ให้กลับไปคัดลอกจากหน้าไฟล์ออกแบบแทน</td></tr>
+        <tr><td>ลิงก์ถูก แต่ไม่มีสิทธิ์</td>
+          <td>ระบบเปิดลิงก์นี้ไม่ได้เพราะยังไม่ได้แชร์สิทธิ์ — กด Share ในไฟล์ Figma
+            แล้วเพิ่ม grading-bot@kmitl.ac.th เป็นผู้ดูได้ (can view)</td></tr>
+        <tr><td>เปิดได้แต่ไม่พบหน้าจอ</td>
+          <td>เปิดไฟล์ได้แล้ว แต่ไม่พบหน้าจอในไฟล์ — ตรวจว่าลิงก์ชี้ไปที่ไฟล์ที่มีงาน
+            ไม่ใช่ไฟล์เปล่าที่เพิ่งสร้าง (พบ 0 หน้าจอ)${P(4)}</td></tr>
+        <tr><td>ไฟล์แนบใหญ่เกิน</td>
+          <td>ไฟล์ report.pdf มีขนาด 38 MB เกินขีดจำกัด 25 MB —
+            ลองบันทึกใหม่แบบบีบอัด หรือแยกเป็นสองไฟล์</td></tr>
+        <tr><td>ส่งงานกลุ่มโดยยังไม่มีสมาชิก</td>
+          <td>งานชิ้นนี้เป็นงานกลุ่ม แต่กลุ่มของคุณมีคนเดียว — ถ้าตั้งใจทำคนเดียว
+            กดยืนยันเพื่อส่งแบบคนเดียว ระบบจะแจ้งอาจารย์ให้ทราบ</td></tr>
+        <tr><td>ส่งเกิน 3 วัน</td>
+          <td>งานนี้เลยกำหนดส่งมาแล้ว 4 วัน ตามกติกาของรายวิชาจะได้ 0 คะแนน
+            และระบบจะไม่ตรวจให้ — ยังกดส่งได้เพื่อเก็บเป็นหลักฐานว่าทำงานแล้ว
+            และติดต่ออาจารย์โดยตรงหากมีเหตุจำเป็น${P(5)}</td></tr>
+        <tr><td>ส่งใหม่หลังอาจารย์เริ่มตรวจ</td>
+          <td>อาจารย์เริ่มตรวจงานชุดนี้แล้วเมื่อ 9 ส.ค. 10:00 จึงส่งใหม่ไม่ได้ —
+            ถ้ามีเหตุจำเป็น ติดต่ออาจารย์เพื่อขอเปิดให้ส่งใหม่เป็นรายกรณี</td></tr>
+        <tr><td>เน็ตหลุดกลางการส่ง</td>
+          <td>การส่งยังไม่สำเร็จเพราะการเชื่อมต่อหลุด — ข้อมูลที่กรอกไว้ยังอยู่ครบ
+            กด “ส่งงาน” อีกครั้งได้เลย</td></tr>
+      </table></div>
+    </div>
+  </div>`,
+  notes:[
+    {t:"นักศึกษาต้องเห็นสำเนาที่ระบบเก็บไว้", settled:true,
+     b:"ถ้าคะแนนมาจากสำเนาที่แช่แข็ง นักศึกษาต้องดูได้ว่าสำเนานั้นหน้าตาอย่างไร ไม่งั้นข้อพิพาท “ผมส่งครบแล้ว” จะไม่มีทางตัดสิน และขัดกับหลักการสืบย้อนของ ticket 12 ที่ทั้งระบบยึดอยู่",
+     src:"ticket 12 · ticket 17 D7"},
+    {t:"ส่งสำเร็จกับดึงหลักฐานสำเร็จเป็นคนละเรื่อง", settled:true,
+     b:"ticket 17 D7 ตัดสินว่าถ้าดึง Figma ไม่ได้ การส่งต้องสำเร็จอยู่ดี หน้าจอจึงต้องสื่อสองอย่างพร้อมกันโดยไม่ให้สับสน คือ “กำหนดส่งของคุณปลอดภัยแล้ว” กับ “ยังมีอะไรที่คุณต้องไปทำ” — เรียงลำดับให้ข้อความที่ทำให้ใจชื้นมาก่อนเสมอ",
+     src:"ticket 17 D7"},
+    {t:"ข้อความผิดพลาดต้องบอกขั้นตอนถัดไป ไม่ใช่บอกอาการ",
+     b:"ticket 20 ระบุไว้ตั้งแต่ต้นว่าไม่รับข้อความว่า “เกิดข้อผิดพลาด” — ทุกข้อความในตารางนี้จึงเขียนเป็นสิ่งที่นักศึกษาทำต่อได้ทันที และระบุอีเมลบัญชีของระบบตรง ๆ เพราะนั่นคือสิ่งที่ต้องพิมพ์ลงไปจริง",
+     src:"โจทย์ข้อ 5 · ticket 02"},
+    {t:"“เปิดได้แต่ว่าง” ต้องเป็นข้อผิดพลาดของตัวเอง",
+     b:"เป็นกรณีที่เงียบที่สุดและเสียหายที่สุด — ลิงก์ผ่านการตรวจสอบทุกอย่าง แต่ไม่มีงานอยู่ในนั้น ถ้าไม่แยกออกมาเป็นข้อความของตัวเอง งานจะถูกส่งเข้าคิวแล้วได้คะแนนต่ำโดยไม่มีใครรู้ว่าสาเหตุคือลิงก์ผิดไฟล์",
+     src:"ticket 02"},
+    {t:"เกิน 3 วันแล้วยังให้กดส่งได้", settled:true,
+     b:"คะแนนเป็น 0 ตามกติกา แต่การปิดปุ่มส่งทิ้งไปเลยทำให้ไม่เหลือหลักฐานว่านักศึกษาทำงานหรือไม่ ซึ่งอาจารย์ต้องใช้ตอนพิจารณากรณีมีเหตุจำเป็น — เก็บหลักฐานไว้ ไม่ใช่ปิดประตู และต้องไม่เรียก AI ตรวจเพื่อไม่ให้เปลืองเครื่อง",
+     src:"ticket 25"},
+  ]
+};
+
+/* ============================================================
+   06 — ดูคะแนน
+   ============================================================ */
+const SC6 = {
+  t:"ผลการตรวจของฉัน", phase:"หลังตรวจ",
+  sub:"ต้องอธิบายคะแนนให้เข้าใจได้โดยไม่เผยคะแนนที่ AI ให้ และโดยไม่มีปุ่มทักท้วงในระบบ",
+  rq:"โจทย์ข้อ 12",
+  body:()=>`
+  <div class="wf">
+    <div class="wfbar"><b>Lab 04 · Persona</b> <span class="dim">— งานกลุ่ม</span>
+      <div class="spacer"></div>${dot("done","ผู้สอนตรวจและยืนยันแล้ว 5 ส.ค.")}${P(1)}</div>
+    <div class="wfbody">
+      <div class="rgrid">
+        <div class="rc"><div class="rh">คะแนนกลุ่ม</div><b>18.0</b> <span class="dim">/ 20</span></div>
+        <div class="rc"><div class="rh">การปรับรายบุคคล</div><b>−0.5</b>
+          <span class="dim">เฉพาะของฉัน</span>${P(2)}</div>
+        <div class="rc"><div class="rh">หักส่งช้า</div><b>0</b> <span class="dim">ส่งตรงเวลา</span></div>
+        <div class="rc"><div class="rh">คะแนนสุทธิของฉัน</div><b>17.5</b> <span class="dim">/ 20</span></div>
+      </div>
+
+      <div class="lbl" style="margin-top:16px">คะแนนแยกตามเกณฑ์</div>
+      <div class="scroll"><table class="tbl">
+        <tr><th>เกณฑ์</th><th>ระดับที่ได้</th><th class="num">คะแนน</th><th>คำอธิบาย</th><th>หลักฐาน</th></tr>
+        <tr><td><b>C1</b> · การใช้สีตามระบบที่กำหนด <span class="dim">CLO3</span></td>
+          <td>ดีเยี่ยม</td><td class="num">3.0/3.0</td>
+          <td>${ph("92%","s")}${ph("60%","s")}</td>
+          <td><span class="btnw">ดูจุดที่อ้างถึง</span>${P(3)}</td></tr>
+        <tr><td><b>C4</b> · ความชัดเจนของลำดับขั้นการใช้งาน <span class="dim">CLO2</span></td>
+          <td>พอใช้</td><td class="num">3.0/5.0</td>
+          <td>${ph("96%","s")}${ph("74%","s")}</td>
+          <td><span class="btnw">ดูจุดที่อ้างถึง</span></td></tr>
+        <tr><td><b>C5</b> · การจัดการข้อผิดพลาดและสถานะว่าง <span class="dim">CLO2</span></td>
+          <td>ต้องปรับปรุง</td><td class="num">2.0/4.0</td>
+          <td>${ph("88%","s")}${ph("52%","s")}</td>
+          <td><span class="btnw">ดูจุดที่อ้างถึง</span></td></tr>
+        <tr><td>${ph("70%")}</td><td>${ph("60%","s")}</td><td class="num">${ph("50%","s")}</td>
+          <td>${ph("90%","s")}</td><td></td></tr>
+      </table></div>
+      <div class="hint">คะแนนที่แสดงคือ <b>คะแนนสุดท้ายที่ผู้สอนยืนยัน</b> —
+        ระบบไม่แสดงคะแนนที่ AI เสนอไว้ก่อนหน้า และไม่แสดงว่าผู้สอนแก้จากเท่าไรเป็นเท่าไร${P(4)}</div>
+
+      <div class="lbl" style="margin-top:16px">เกณฑ์เหล่านี้วัดผลลัพธ์การเรียนรู้ข้อไหน</div>
+      <div class="row">
+        <span class="chip">CLO2 · ออกแบบลำดับขั้นการใช้งานที่ผู้ใช้ทำงานสำเร็จได้ — C4 C5 C6</span>
+        <span class="chip">CLO3 · ใช้ระบบการออกแบบอย่างสม่ำเสมอ — C1 C2 C3</span>
+      </div>
+      <div class="hint">แสดงว่าเกณฑ์ผูกกับผลลัพธ์การเรียนรู้ข้อไหน <b>แต่ไม่แสดงตัวเลข attainment ของตัวเอง</b>
+        — อาจารย์เปิดสวิตช์ระดับรายวิชาให้เห็นตัวเลขได้เมื่อต้องการ ${dot("none","ตอนนี้ปิดอยู่")}${P(5)}</div>
+
+      <div class="box" style="margin-top:16px">
+        <b>ไม่เห็นด้วยกับคะแนน</b>
+        <div class="dim" style="margin-top:5px">ระบบไม่มีช่องทางขอทบทวนคะแนนออนไลน์ —
+          ติดต่อ ผศ.ดร. ธนา โดยตรงในชั่วโมงให้คำปรึกษา วันพุธ 13:00–15:00 ห้อง ENG-402
+          หรืออีเมล thana.ho@kmitl.ac.th${P(6)}</div>
+      </div>
+    </div>
+  </div>`,
+  notes:[
+    {t:"ป้ายบอกสถานะการตรวจต้องมีเสมอ", settled:true,
+     b:"ticket 12 ตัดสินว่านักศึกษาเห็นแค่คะแนนสุดท้ายพร้อมป้ายว่าผ่านตาผู้สอนหรือยัง — ถ้าไม่มีป้ายนี้ คะแนนที่ยังไม่ยืนยันจะถูกเข้าใจว่าเป็นคะแนนจริง แล้วขยับทีหลังโดยไม่มีคำอธิบาย ซึ่งทำลายความเชื่อถือมากกว่าการรอ",
+     src:"ticket 12"},
+    {t:"เห็นการปรับรายบุคคลของตัวเองเท่านั้น", settled:true,
+     b:"ticket 11 ตัดสินว่าคะแนนเป็นสองชั้น เพื่อนเห็นคะแนนกลุ่มร่วมกันแต่เห็นคะแนนสุทธิเฉพาะของตัวเอง หน้าจอนี้จึงต้องแยกสองบรรทัดให้เห็นชัด ไม่ยุบเป็นตัวเลขเดียว — เพราะนักศึกษาต้องแยกออกว่าอะไรคือผลงานกลุ่มและอะไรคือการตัดสินเฉพาะตัว",
+     src:"ticket 11"},
+    {t:"หลักฐานต้องกดดูได้ ไม่ใช่แค่บรรยาย",
+     b:"เป็นข้อกำหนดเดียวกับฝั่งอาจารย์ใน ticket 21 — AI ต้องคืนพิกัดบนภาพ ไม่ใช่คืนแต่ข้อความ ถ้าชั้น analyzer ทำไม่ได้ ปุ่มนี้ตายทั้งฝั่งอาจารย์และฝั่งนักศึกษาพร้อมกัน",
+     src:"ticket 21 · ส่งกลับไป ticket 17"},
+    {t:"ไม่แสดงว่าผู้สอนแก้จากเท่าไร", settled:true,
+     b:"ระบบบันทึก ScoreEdit ไว้ครบแบบ append-only แต่ไม่เผยให้นักศึกษา — ปิดจากสายตา ไม่ใช่ปิดการบันทึก ถ้าเผย ทุกการแก้จะกลายเป็นการต่อรอง และอาจารย์จะเลิกแก้",
+     src:"ticket 12"},
+    {t:"ตัดสินแล้ว: เห็นว่าวัด CLO ข้อไหน แต่ไม่เห็นตัวเลข", settled:true,
+     b:"อาจารย์เลือกแบบนี้ พร้อมเงื่อนไขว่าถ้านักศึกษามาถามควรมีหน้าที่เปิดให้ดูได้ — จึงออกแบบเป็นสวิตช์ระดับรายวิชาที่ปิดเป็นค่าตั้งต้น ไม่ใช่การเปิดรายคน เพราะการเปิดรายคนต้องมีระบบสิทธิ์ย่อยที่ MVP ไม่ควรแบก",
+     src:"อาจารย์ตอบ 7 ส.ค. 69"},
+    {t:"ตัดสินแล้ว: ไม่มีปุ่มทักท้วง — จึงต้องเขียนทางออกไว้แทน", settled:true,
+     b:"อาจารย์เลือกให้มาคุยกันเอง ซึ่งประหยัดการสร้างระบบไปมาก แต่ถ้าหน้าจอเงียบสนิท นักศึกษาที่ไม่พอใจจะไม่รู้ว่าต้องไปไหน กล่องนี้จึงต้องระบุเวลาและสถานที่จริง ไม่ใช่แค่ประโยคว่า “ติดต่ออาจารย์”",
+     src:"อาจารย์ตอบ 7 ส.ค. 69"},
+  ]
+};
+
+/* ============================================================
+   07 — ผังการเดินทาง
+   ============================================================ */
+const SC7 = {
+  t:"ผังการเดินทางสองเส้น", phase:"ภาพรวม",
+  sub:"ของส่งมอบข้อ 2 ของตั๋ว — เส้นทางงานเดี่ยวและงานกลุ่มตั้งแต่เปิดหน้าจอจนส่งสำเร็จ",
+  rq:"ของส่งมอบ ticket 20",
+  body:()=>{
+    const solo=["เปิดหน้าแรก เห็นว่า Lab 06 ใกล้ครบกำหนด","กดเข้าหน้าส่งงาน","อ่านโจทย์และเกณฑ์ทุกระดับ",
+      "วางลิงก์ Figma แล้วกดตรวจสอบลิงก์","แนบไฟล์เพิ่ม (ถ้ามี)",
+      "อ่านกล่องคำนวณค่าปรับ เห็นว่าส่งตอนนี้ยังตรงเวลา","กดส่งงาน",
+      "ระบบแช่แข็งสำเนา Figma ทันที","เห็นหน้ายืนยันพร้อมสำเนาที่เก็บไว้",
+      "ส่งใหม่ได้จนกว่าอาจารย์จะเริ่มตรวจ — เลยกำหนดแล้วจ่ายด้วยค่าปรับ"];
+    const grp=["เปิดหน้าแรก เห็นว่า Lab 07 เป็นงานกลุ่ม","กดเข้าหน้าส่งงาน ระบบขอให้จัดกลุ่มก่อน",
+      "สร้างกลุ่ม เพิ่มเพื่อนด้วยรหัสนักศึกษา","เพื่อนเห็นในหน้าแรกของตัวเองทันทีว่าถูกเพิ่มโดยใคร",
+      "กลับมาหน้าส่งงาน อ่านโจทย์และเกณฑ์","วางลิงก์ Figma ของกลุ่ม แล้วกดตรวจสอบลิงก์",
+      "สมาชิกคนใดคนหนึ่งกดส่ง","ระบบแช่แข็งสำเนาและบันทึกว่าใครกดส่ง",
+      "สมาชิกทุกคนเห็นสถานะเดียวกัน","แก้สมาชิกหรือไฟล์แล้วส่งใหม่ได้ — เลยกำหนดแล้วจ่ายด้วยค่าปรับ"];
+    const col=(ttl,arr)=>`<div class="rc"><div class="rh">${ttl}</div>${
+      arr.map((x,i)=>`<div class="wizstep"><span class="n">${i+1}</span>${esc(x)}</div>`).join("")}</div>`;
+    return `
+  <div class="wf">
+    <div class="wfbar"><b>จากเปิดหน้าจอถึงส่งสำเร็จ</b><div class="spacer"></div>
+      <span class="dim">สองเส้นต่างกันแค่ช่วงต้น — ตั้งแต่ขั้นวางลิงก์เป็นต้นไปเหมือนกันทุกประการ</span></div>
+    <div class="wfbody">
+      <div class="rgrid">${col("งานเดี่ยว · Lab 06",solo)}${col("งานกลุ่ม · Lab 07",grp)}</div>
+      <div class="hint">ความต่างทั้งหมดอยู่ที่ <b>สามขั้นแรก</b> เท่านั้น${P(1)} —
+        จึงไม่ควรทำหน้าส่งงานสองแบบ ให้ทำหน้าเดียวที่แทรกขั้นจัดกลุ่มเข้ามาเมื่องานเป็นงานกลุ่ม</div>
+    </div>
+  </div>
+
+  <div class="wf">
+    <div class="wfbar"><b>ทางแยกที่ต้องรองรับ</b></div>
+    <div class="wfbody">
+      <div class="scroll"><table class="tbl">
+        <tr><th>เกิดอะไรขึ้น</th><th>ระบบพาไปไหน</th></tr>
+        <tr><td>ลิงก์ Figma ตรวจไม่ผ่านตอนกดตรวจสอบ</td>
+          <td>อยู่หน้าเดิม แสดงขั้นตอนแก้ ยังกดส่งได้ถ้ายืนยัน</td></tr>
+        <tr><td>ลิงก์ผ่าน แต่ระบบดึงไม่สำเร็จตอนกดส่ง</td>
+          <td><b>ส่งสำเร็จ</b> ไปหน้ายืนยันแบบ “หลักฐานยังไม่ครบ” พร้อมปุ่มลองใหม่${P(2)}</td></tr>
+        <tr><td>เลยกำหนดส่งไม่เกิน 3 วัน</td>
+          <td>ส่งได้และส่งใหม่ได้ แสดงตารางเทียบค่าปรับก่อน/หลังก่อนยืนยันทุกครั้ง</td></tr>
+        <tr><td>เลยกำหนดเกิน 3 วัน · ยังไม่เคยส่ง</td>
+          <td>ส่งได้เพื่อเก็บหลักฐาน คะแนน 0 ระบบไม่เรียก AI ตรวจ</td></tr>
+        <tr><td>เลยกำหนดเกิน 3 วัน · <b>ส่งไว้แล้ว</b></td>
+          <td><b>ปฏิเสธ</b> เพราะจะทำให้คะแนนที่มีอยู่กลายเป็น 0 — ส่งต่อไปที่อาจารย์</td></tr>
+        <tr><td>อาจารย์กดสั่งตรวจทั้งชุดแล้ว</td>
+          <td>ปิดรับการส่งใหม่ทุกกรณี กลายเป็นการขอต่ออาจารย์เป็นรายกรณี</td></tr>
+        <tr><td>ถูกเพิ่มเข้ากลุ่มโดยไม่ได้ตกลง</td>
+          <td>เห็นในหน้าแรก กดออกจากกลุ่มเองได้ก่อนกลุ่มกดส่ง</td></tr>
+      </table></div>
+    </div>
+  </div>`;
+  },
+  notes:[
+    {t:"เส้นทางสองเส้นต่างกันแค่สามขั้นแรก",
+     b:"เป็นเหตุผลที่ไม่ควรทำหน้าส่งงานสองแบบแยกกัน การมีสองหน้าที่เกือบเหมือนกันคือแหล่งของบั๊กที่แก้ที่หนึ่งลืมอีกที่หนึ่ง และเพิ่มงานให้รุ่นต่อมาที่ต้องรับช่วงตาม ticket 17 D4",
+     src:"ticket 17 D4"},
+    {t:"ทางแยกสำคัญที่สุดคือดึงหลักฐานไม่สำเร็จ", settled:true,
+     b:"เป็นทางแยกเดียวในผังทั้งหมดที่ระบบต้องเลือกทำสิ่งที่ดูขัดสัญชาตญาณ คือบอกว่า “สำเร็จ” ทั้งที่มีอะไรบางอย่างล้มเหลว — ถ้าออกแบบพลาดตรงนี้ นักศึกษาจะกดส่งซ้ำจนเลยกำหนดเพราะคิดว่ายังไม่สำเร็จ",
+     src:"ticket 17 D7"},
+  ]
+};
+
+/* ============================================================ render */
+const SCREENS = [SC1,SC2,SC3,SC4,SC5,SC6,SC7];
+
+function renderRail(){
+  return `<h1>การเดินทางของนักศึกษา</h1>` + SCREENS.map((s,i)=>`
+    ${s.phase && (i===0 || SCREENS[i-1].phase!==s.phase)?`<div class="phase">${esc(s.phase)}</div>`:""}
+    <div class="step ${i===S.i?"on":""}" data-sc="${i}" tabindex="0" role="button">
+      <span class="no">${String(i+1).padStart(2,"0")}</span>
+      <span class="tt">${esc(s.t)}${s.isNew?'<span class="nw">สำคัญ</span>':""}
+        <span class="rq">${esc(s.rq)}</span></span>
+    </div>`).join("") + `
+    <div class="railnote">รอบที่ 1 — หลังอาจารย์ตอบคำถามนโยบาย 4 ข้อ เมื่อ 7 ส.ค. 69
+      <br><br>สองหน้าที่ทำเครื่องหมาย <b>สำคัญ</b> คือหน้าที่ความผิดพลาดจะกลายเป็นงานของอาจารย์
+      <br><br>ใช้ CSS ชุดเดียวกับ wireframe ฝั่งอาจารย์โดยตั้งใจ — สองฝั่งเป็นระบบเดียวกัน</div>`;
+}
+function renderMain(){
+  const s = SCREENS[S.i];
+  return `<h1 class="hd">${String(S.i+1).padStart(2,"0")} · ${esc(s.t)}</h1>
+    <p class="sub">${esc(s.sub)}</p>${s.body()}`;
+}
+function renderNotes(){
+  const s = SCREENS[S.i];
+  return `<h2>จุดที่ต้องตัดสินใจ</h2>` + s.notes.map((n,i)=>`
+    <div class="note ${n.settled?"settled":""} ${S.pin===i+1?"on":""}" data-note="${i+1}">
+      <div class="nh"><span class="nn">${i+1}</span><span class="nt">${esc(n.t)}</span></div>
+      <div class="nb">${esc(n.b)}</div>
+      <span class="src">${esc(n.src)}</span>
+    </div>`).join("");
+}
+function renderBar(){
+  const s = SCREENS[S.i];
+  return `<b>${String(S.i+1).padStart(2,"0")}</b> <span class="dim">${esc(s.t)}</span>
+    <span class="k">↑ ↓ เปลี่ยนหน้าจอ</span>
+    <div class="spacer"></div>
+    <span class="dim">หมุดสีในหน้าจอ = จุดที่ต้องตัดสินใจ กดแล้วกระโดดไปที่บันทึกด้านขวา</span>`;
+}
+function render(){
+  document.getElementById("rail").innerHTML  = renderRail();
+  document.getElementById("main").innerHTML  = renderMain();
+  document.getElementById("notes").innerHTML = renderNotes();
+  document.getElementById("bar").innerHTML   = renderBar();
+}
+
+/* ============================================================ events */
+function go(i){ S.i=(i+SCREENS.length)%SCREENS.length; S.pin=null; render(); window.scrollTo(0,0); }
+document.addEventListener("click",e=>{
+  const st=e.target.closest("[data-sc]");   if(st){ go(+st.dataset.sc); return; }
+  const pn=e.target.closest("[data-pin]");  if(pn){
+    S.pin=+pn.dataset.pin; render();
+    const el=document.querySelector(`[data-note="${S.pin}"]`);
+    if(el) el.scrollIntoView({block:"nearest"});
+    return;
+  }
+  const nt=e.target.closest("[data-note]"); if(nt){ S.pin=+nt.dataset.note; render(); }
+});
+document.addEventListener("keydown",e=>{
+  const t=e.target;
+  if(t && (t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.tagName==="SELECT"||t.isContentEditable)) return;
+  if(e.key==="ArrowDown"){ e.preventDefault(); go(S.i+1); }
+  if(e.key==="ArrowUp"){   e.preventDefault(); go(S.i-1); }
+});
+
+render();
+</script>

@@ -1,0 +1,1085 @@
+<title>Prototype — หน้าทดสอบ rubric และแดชบอร์ดความสอดคล้อง (ticket 22)</title>
+
+<!--
+  PROTOTYPE — โยนทิ้งได้ ไม่ใช่โค้ดจริง
+  หกหน้าจอ สลับด้วย ?v=setup|summary|criterion|proposal|history|terms หรือลูกศรที่แถบล่าง
+  ตัวเลขทั้งหมดสมมติ แต่ปั้นให้มีลักษณะเหมือนข้อมูลจริง:
+  เกณฑ์ที่วัดได้ตรง ๆ (contrast, ความสม่ำเสมอ) AI ทำได้ดี
+  เกณฑ์ที่ต้องตีความ (flow, micro-copy) AI ทำได้แย่ และเอนคนละทาง จนหักล้างกันในภาพรวม
+  ticket 22 ของ .scratch/ai-grading-agent
+-->
+
+<style>
+:root{
+  --bg:#f6f6f4; --panel:#ffffff; --panel-2:#fbfbfa; --ink:#1c1c1a; --ink-2:#5a5a54;
+  --ink-3:#8a8a82; --line:#e2e2dc; --line-2:#cfcfc7;
+  --ai:#6d4aff; --ai-bg:#f0ecff; --ai-line:#d5cbff;
+  --teacher:#0d7a4f; --teacher-bg:#e6f5ee; --teacher-line:#b9e2d0;
+  --warn:#b06a00; --warn-bg:#fdf1de; --warn-line:#f0d5a8;
+  --danger:#b3261e; --danger-bg:#fdecea; --danger-line:#f3c4bf;
+  --lock:#3a4a63; --lock-bg:#eef1f6; --lock-line:#ccd5e2;
+  --r:10px; --mono:ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#131312; --panel:#1c1c1b; --panel-2:#232322; --ink:#eceae5; --ink-2:#a9a79f;
+  --ink-3:#78766f; --line:#302f2d; --line-2:#413f3c;
+  --ai:#a892ff; --ai-bg:#241f3d; --ai-line:#3d3363;
+  --teacher:#5bcf9b; --teacher-bg:#0f2a20; --teacher-line:#1d4b38;
+  --warn:#e6a94d; --warn-bg:#332711; --warn-line:#5c4519;
+  --danger:#ef7c72; --danger-bg:#361a17; --danger-line:#5c2b25;
+  --lock:#9db0cc; --lock-bg:#1b2330; --lock-line:#2f3c50;
+}}
+:root[data-theme="dark"]{
+  --bg:#131312; --panel:#1c1c1b; --panel-2:#232322; --ink:#eceae5; --ink-2:#a9a79f;
+  --ink-3:#78766f; --line:#302f2d; --line-2:#413f3c;
+  --ai:#a892ff; --ai-bg:#241f3d; --ai-line:#3d3363;
+  --teacher:#5bcf9b; --teacher-bg:#0f2a20; --teacher-line:#1d4b38;
+  --warn:#e6a94d; --warn-bg:#332711; --warn-line:#5c4519;
+  --danger:#ef7c72; --danger-bg:#361a17; --danger-line:#5c2b25;
+  --lock:#9db0cc; --lock-bg:#1b2330; --lock-line:#2f3c50;
+}
+:root[data-theme="light"]{
+  --bg:#f6f6f4; --panel:#ffffff; --panel-2:#fbfbfa; --ink:#1c1c1a; --ink-2:#5a5a54;
+  --ink-3:#8a8a82; --line:#e2e2dc; --line-2:#cfcfc7;
+  --ai:#6d4aff; --ai-bg:#f0ecff; --ai-line:#d5cbff;
+  --teacher:#0d7a4f; --teacher-bg:#e6f5ee; --teacher-line:#b9e2d0;
+  --warn:#b06a00; --warn-bg:#fdf1de; --warn-line:#f0d5a8;
+  --danger:#b3261e; --danger-bg:#fdecea; --danger-line:#f3c4bf;
+  --lock:#3a4a63; --lock-bg:#eef1f6; --lock-line:#ccd5e2;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Leelawadee UI","Noto Sans Thai","IBM Plex Sans Thai","Sarabun",
+    -apple-system,"Segoe UI",system-ui,sans-serif;
+  font-size:13.5px;line-height:1.55;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;
+  padding-bottom:72px}
+:focus-visible{outline:2px solid var(--ai);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+h1,h2,h3{margin:0;text-wrap:balance}
+table{border-collapse:collapse;width:100%}
+
+/* ---------- แถบสลับหน้าจอ (ของ prototype เท่านั้น) ---------- */
+.protobar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9999;
+  display:flex;gap:2px;align-items:center;background:var(--panel);border:1px solid var(--line-2);
+  border-radius:999px;padding:4px;box-shadow:0 6px 24px rgba(0,0,0,.16)}
+.protobar button{border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:12px;
+  padding:6px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.protobar button.on{background:var(--ink);color:var(--bg)}
+.protonote{position:fixed;left:12px;bottom:16px;z-index:9999;font-size:11px;color:var(--ink-3);
+  max-width:200px;line-height:1.4}
+
+/* ---------- โครง ---------- */
+.topbar{position:sticky;top:0;z-index:50;background:var(--panel);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:14px;padding:9px 18px;flex-wrap:wrap}
+.crumb{font-size:12px;color:var(--ink-3)}
+.crumb b{color:var(--ink);font-weight:600}
+.spacer{flex:1}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 18px 0}
+.grid2{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:16px}
+.card>h2{font-size:14px;font-weight:650;margin-bottom:4px}
+.card>.sub{font-size:12px;color:var(--ink-3);margin-bottom:12px}
+.sec{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);
+  font-weight:650;margin:0 0 8px}
+
+/* ---------- ชิ้นส่วน ---------- */
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 8px;border-radius:999px;
+  border:1px solid var(--line-2);color:var(--ink-2);background:var(--panel-2);white-space:nowrap}
+.tag.ai{color:var(--ai);background:var(--ai-bg);border-color:var(--ai-line)}
+.tag.t{color:var(--teacher);background:var(--teacher-bg);border-color:var(--teacher-line)}
+.tag.w{color:var(--warn);background:var(--warn-bg);border-color:var(--warn-line)}
+.tag.d{color:var(--danger);background:var(--danger-bg);border-color:var(--danger-line)}
+.tag.lk{color:var(--lock);background:var(--lock-bg);border-color:var(--lock-line)}
+.btn{border:1px solid var(--line-2);background:var(--panel);color:var(--ink);font:inherit;font-size:12.5px;
+  padding:7px 14px;border-radius:7px;cursor:pointer}
+.btn:hover{background:var(--panel-2)}
+.btn.pri{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.dg{color:var(--danger);border-color:var(--danger-line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.note{border-left:3px solid var(--line-2);padding:9px 12px;background:var(--panel-2);
+  border-radius:0 7px 7px 0;font-size:12.5px;color:var(--ink-2);margin:10px 0}
+.note.w{border-color:var(--warn);background:var(--warn-bg);color:var(--ink)}
+.note.d{border-color:var(--danger);background:var(--danger-bg);color:var(--ink)}
+.note.lk{border-color:var(--lock);background:var(--lock-bg);color:var(--ink)}
+.note b{font-weight:650}
+.mono{font-family:var(--mono);font-size:12px}
+
+/* ---------- หน้าเริ่มรอบทดสอบ ---------- */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--ink-2);margin-bottom:5px;font-weight:600}
+.field select,.field input[type=text]{width:100%;font:inherit;font-size:13px;padding:7px 9px;
+  border:1px solid var(--line-2);border-radius:7px;background:var(--panel);color:var(--ink)}
+.radios{display:flex;flex-direction:column;gap:7px}
+.radio{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;
+  padding:9px 11px;cursor:pointer;background:var(--panel)}
+.radio.on{border-color:var(--ai);background:var(--ai-bg)}
+.radio input{margin-top:3px}
+.radio .t1{font-size:12.5px;font-weight:600}
+.radio .t2{font-size:11.5px;color:var(--ink-2);line-height:1.45}
+.slider{display:flex;align-items:center;gap:12px}
+.slider input{flex:1}
+.slider .val{font-family:var(--mono);font-size:16px;min-width:34px;text-align:right}
+.costrow{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line);
+  font-size:12.5px}
+.costrow:last-child{border:0}
+.costrow .v{font-family:var(--mono);white-space:nowrap}
+.costrow.hi .v{color:var(--danger);font-weight:650}
+
+/* ---------- ตัวเลขหัวเรื่อง ---------- */
+.headline{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0 4px}
+@media(max-width:640px){.headline{grid-template-columns:1fr}}
+.big{border:1px solid var(--line);border-radius:9px;padding:13px 15px;background:var(--panel-2)}
+.big .n{font-size:34px;font-weight:600;line-height:1.05;letter-spacing:-.02em}
+.big .l{font-size:12px;color:var(--ink-2);margin-top:3px}
+.big .c{font-size:11.5px;color:var(--ink-3);margin-top:7px;padding-top:7px;border-top:1px dashed var(--line)}
+.verdict{font-size:15px;line-height:1.6;font-weight:500}
+
+/* ---------- แถบเทียบเพดาน ---------- */
+.ceil{margin:14px 0 2px}
+.ceilrow{display:grid;grid-template-columns:96px 1fr 52px;gap:10px;align-items:center;margin-bottom:7px}
+.ceilrow .k{font-size:12px;color:var(--ink-2);text-align:right}
+.track{position:relative;height:16px;background:var(--panel-2);border:1px solid var(--line);border-radius:4px}
+.fill{position:absolute;top:0;bottom:0;left:0;border-radius:3px}
+.fill.ai{background:var(--ai);opacity:.85}
+.fill.t{background:var(--teacher);opacity:.85}
+.ceilmark{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);opacity:.75}
+.ceilmark::after{content:attr(data-l);position:absolute;top:-15px;left:50%;transform:translateX(-50%);
+  font-size:10px;color:var(--ink-2);white-space:nowrap}
+.ceilrow .v{font-family:var(--mono);font-size:12.5px}
+
+/* ---------- ตารางสับสน ---------- */
+.cm{display:inline-block;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.cm table{width:auto}
+.cm th,.cm td{border:1px solid var(--line);padding:0;text-align:center}
+.cm th{background:var(--panel-2);font-size:11px;font-weight:600;color:var(--ink-2);padding:5px 8px}
+.cell{width:64px;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1px;position:relative}
+.cell .n{font-size:15px;font-family:var(--mono);font-weight:600}
+.cell .p{font-size:10px;color:var(--ink-3)}
+.cell.diag{outline:2px solid var(--teacher);outline-offset:-2px}
+.cell.far{outline:2px solid var(--danger);outline-offset:-2px}
+.cmlegend{display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-2);margin-top:10px}
+.axl{font-size:11px;color:var(--ink-3);letter-spacing:.05em}
+
+/* ---------- แผนภาพจุดรายเกณฑ์ ---------- */
+.dot{display:grid;grid-template-columns:210px 1fr 88px 44px;gap:12px;align-items:center;
+  padding:9px 0;border-bottom:1px solid var(--line)}
+.dot:last-child{border:0}
+@media(max-width:760px){.dot{grid-template-columns:1fr;gap:5px}}
+.dot .name{font-size:12.5px}
+.dot .name .id{color:var(--ink-3);font-family:var(--mono);font-size:11px;margin-right:6px}
+.lane{position:relative;height:26px}
+.lane .axis{position:absolute;left:0;right:0;top:12px;height:1px;background:var(--line)}
+.lane .gap{position:absolute;top:11px;height:3px;background:var(--line-2);border-radius:2px}
+.pt{position:absolute;top:6px;width:13px;height:13px;border-radius:50%;transform:translateX(-50%);
+  border:2px solid var(--panel)}
+.pt.ai{background:var(--ai)}
+.pt.t{background:var(--teacher)}
+.dot .num{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+.dot .flag{font-size:11px}
+.scaleax{display:flex;justify-content:space-between;font-size:10.5px;color:var(--ink-3);
+  margin-top:2px;font-family:var(--mono)}
+
+/* ---------- ตาราง ---------- */
+.tbl th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);
+  font-weight:650;padding:6px 9px;border-bottom:1px solid var(--line-2)}
+.tbl td{padding:8px 9px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.tbl .r{text-align:right;font-family:var(--mono)}
+.link{color:var(--ai);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+
+/* ---------- diff ข้อความ rubric ---------- */
+.diff{border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:12.5px;line-height:1.6}
+.diff .h{background:var(--panel-2);padding:6px 11px;font-size:11px;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--ink-3);font-weight:650;border-bottom:1px solid var(--line)}
+.diff .b{padding:11px}
+.del{background:var(--danger-bg);color:var(--ink);text-decoration:line-through;
+  text-decoration-color:var(--danger);padding:0 2px;border-radius:3px}
+.ins{background:var(--teacher-bg);color:var(--ink);padding:0 2px;border-radius:3px}
+
+/* ---------- ไทม์ไลน์ ---------- */
+.tl{position:relative;padding:26px 8px 8px}
+.tlband{position:absolute;left:0;right:0;border-radius:4px;background:var(--teacher);opacity:.10}
+.tlbandl{position:absolute;right:6px;font-size:10.5px;color:var(--teacher);font-weight:600}
+.tlaxis{position:absolute;left:0;right:0;height:1px;background:var(--line-2)}
+.tlpt{position:absolute;width:11px;height:11px;border-radius:50%;background:var(--ai);
+  border:2px solid var(--panel);transform:translate(-50%,-50%);cursor:pointer}
+.tlpt.sel{outline:2px solid var(--ink);outline-offset:2px}
+.tlseg{position:absolute;height:2px;background:var(--ai);opacity:.55;transform-origin:0 50%}
+.tlx{position:absolute;transform:translateX(-50%);font-size:10.5px;color:var(--ink-3);text-align:center;
+  width:88px;line-height:1.3}
+.tly{position:absolute;left:-2px;transform:translateY(-50%);font-size:10.5px;color:var(--ink-3);
+  font-family:var(--mono)}
+
+/* ---------- แถบสถานะชุดข้อมูล ---------- */
+.setbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:var(--lock-bg);
+  border:1px solid var(--lock-line);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--ink)}
+.setbar .d{width:1px;align-self:stretch;background:var(--lock-line)}
+</style>
+
+<div class="topbar">
+  <div class="crumb">UX/UI Design · <b>2/2569</b> · ระบบทดสอบ rubric</div>
+  <span class="tag lk">🔒 ชุด test 34 ชิ้น · ยังไม่เคยเปิด · เปิดได้ 31 มี.ค. 70</span>
+  <div class="spacer"></div>
+  <div class="crumb" id="screenname"></div>
+</div>
+
+<div class="wrap" id="app"></div>
+
+<div class="protonote">PROTOTYPE · ตัวเลขสมมติ<br>← → เปลี่ยนหน้าจอ</div>
+<div class="protobar" id="bar"></div>
+
+<script>
+/* ============================================================
+   ข้อมูลสมมติ — ปั้นให้มีลักษณะเหมือนข้อมูลจริง
+   ============================================================ */
+
+const LEVELS = [
+  {n:1, name:"ต้องปรับปรุง"},
+  {n:2, name:"พอใช้"},
+  {n:3, name:"ดี"},
+  {n:4, name:"ดีมาก"}
+];
+
+/* แถว = อาจารย์ · คอลัมน์ = AI · รวม 196 การตัดสิน (28 ชิ้น × 7 เกณฑ์) */
+const CM = [
+  [10, 5, 3, 0],
+  [ 6,33,12, 3],
+  [ 2,15,58,13],
+  [ 1, 2,12,21]
+];
+
+const CRIT = [
+  {id:"C1", name:"ลำดับชั้นการมองเห็น",        n:28, exact:68, near:96, qwk:.71, ceil:.82, bias:+0.04, kind:"mixed"},
+  {id:"C2", name:"ความสม่ำเสมอของระบบออกแบบ",  n:28, exact:75, near:100,qwk:.78, ceil:.84, bias:+0.02, kind:"rule"},
+  {id:"C3", name:"ความอ่านง่ายและ contrast",    n:28, exact:82, near:100,qwk:.81, ceil:.86, bias:-0.01, kind:"rule"},
+  {id:"C4", name:"โครงสร้างข้อมูลและการนำทาง",  n:28, exact:61, near:93, qwk:.58, ceil:.74, bias:+0.11, kind:"mixed"},
+  {id:"C5", name:"การออกแบบ flow ตามโจทย์ผู้ใช้",n:28, exact:43, near:86, qwk:.31, ceil:.61, bias:+0.39, kind:"judge"},
+  {id:"C6", name:"คุณภาพของ micro-copy",        n:28, exact:46, near:89, qwk:.34, ceil:.55, bias:-0.32, kind:"judge"},
+  {id:"C7", name:"ความสมบูรณ์ของการส่งมอบ",     n:28, exact:61, near:96, qwk:.64, ceil:.88, bias:-0.25, kind:"rule"}
+];
+
+/* งานที่คะแนนต่างกันมากที่สุด (|ต่าง| ≥ 2 ระดับ) */
+const OUTLIERS = [
+  {g:"กลุ่ม 04", w:"Wireframe แอปจองห้องซ้อม", c:"C5", ai:4, me:2, why:"AI มองว่า flow สั้น = ดี · อาจารย์เห็นว่าข้ามขั้นยืนยันตัวตน"},
+  {g:"กลุ่ม 11", w:"Hi-fi หน้าชำระเงิน",        c:"C5", ai:4, me:2, why:"AI ไม่เห็นว่า error state หายไปทั้งหน้าจอ"},
+  {g:"กลุ่ม 02", w:"Wireframe แอปจองห้องซ้อม", c:"C5", ai:3, me:1, why:"AI นับจำนวนหน้าจอครบ แต่ลำดับไม่ตรงกับ user story"},
+  {g:"กลุ่ม 07", w:"Hi-fi หน้าโปรไฟล์",         c:"C6", ai:1, me:3, why:"AI อ่านข้อความภาษาไทยว่ากำกวม · อาจารย์เห็นว่าเป็นภาษาที่กลุ่มเป้าหมายใช้จริง"},
+  {g:"กลุ่ม 09", w:"Hi-fi หน้าโปรไฟล์",         c:"C6", ai:1, me:3, why:"ปุ่มใช้คำสแลง AI ตัดสินว่าไม่เป็นทางการ"},
+  {g:"กลุ่ม 13", w:"Design system",             c:"C7", ai:2, me:4, why:"ไฟล์แนบอยู่ในหน้า 2 ของ Figma AI อ่านไม่ถึง"},
+  {g:"กลุ่ม 05", w:"Design system",             c:"C7", ai:2, me:4, why:"เหมือนกลุ่ม 13 — หลักฐานอยู่นอก frame แรก"},
+  {g:"กลุ่ม 12", w:"Wireframe แอปจองห้องซ้อม", c:"C4", ai:4, me:2, why:"AI มองผังเป็นลำดับชั้น แต่จริง ๆ วนกลับที่เดิม"},
+  {g:"กลุ่ม 01", w:"Hi-fi หน้าชำระเงิน",        c:"C1", ai:1, me:3, why:"ภาพ export ความละเอียดต่ำ AI อ่าน contrast ผิด"},
+  {g:"กลุ่ม 08", w:"Design system",             c:"C6", ai:1, me:3, why:"copy เป็นภาษาอังกฤษปนไทย AI ตัดสินว่าไม่สม่ำเสมอ"},
+  {g:"กลุ่ม 06", w:"Hi-fi หน้าโปรไฟล์",         c:"C5", ai:3, me:1, why:"flow ถูกต้องตามแบบ แต่ไม่ตอบโจทย์ที่ให้ไว้"}
+];
+
+/* ประวัติการปรับ — ตัวเลขคือ QWK เฉลี่ยทุกเกณฑ์บนชุด dev */
+const HIST = [
+  {v:"v1.0", d:"5 ต.ค. 69", q:.41, what:"rubric ตั้งต้นจาก มคอ.3 · prompt แบบ zero-shot",           kind:"base"},
+  {v:"v1.1", d:"19 ต.ค. 69",q:.49, what:"เพิ่มตัวอย่างงาน 2 ชิ้นเป็น anchor ในทุกระดับของ C1–C3",   kind:"prompt"},
+  {v:"v1.2", d:"2 พ.ย. 69", q:.52, what:"บังคับให้ AI อ้างหลักฐานก่อนให้ระดับ",                      kind:"prompt"},
+  {v:"v2.0", d:"16 พ.ย. 69",q:.58, what:"แยก C4 ออกจาก C1 · เขียนข้อความเกณฑ์ใหม่ทั้งสองข้อ",        kind:"rubric"},
+  {v:"v2.1", d:"30 พ.ย. 69",q:.57, what:"ลองย้าย contrast ไปชั้นกฎ deterministic ทั้งหมด",           kind:"rule"},
+  {v:"v3.0", d:"14 ธ.ค. 69",q:.62, what:"C7 ให้ชั้นกฎตัดสินล้วน · C5 เขียนใหม่ให้ผูกกับ user story", kind:"rubric"}
+];
+
+/* เทียบข้ามภาค */
+const TERMS = [
+  {t:"1/2569 (ซ้อมใหญ่)", n:26, exact:57, near:91, qwk:.54, note:"2 ชิ้นงานสุดท้ายของภาค · rubric v3.0"},
+  {t:"2/2569 (ทดลองจริง)",n:28, exact:62, near:94, qwk:.62, note:"5 ชิ้นงานแรกของภาค · rubric v3.0"}
+];
+
+/* ============================================================ */
+
+const TOTAL = CM.flat().reduce((a,b)=>a+b,0);
+const diag  = CM.reduce((s,r,i)=>s+r[i],0);
+const near  = CM.reduce((s,r,i)=>s+r.reduce((t,v,j)=>t+(Math.abs(i-j)<=1?v:0),0),0);
+const far   = TOTAL-near;
+const aiHi  = CM.reduce((s,r,i)=>s+r.reduce((t,v,j)=>t+(j>i?v:0),0),0);
+const aiLo  = CM.reduce((s,r,i)=>s+r.reduce((t,v,j)=>t+(j<i?v:0),0),0);
+const pctEx = Math.round(diag/TOTAL*100);
+const pctNe = Math.round(near/TOTAL*100);
+
+const CEIL = {exact:71, near:96, qwk:.76};      /* เพดานมนุษย์: อาจารย์ตรวจซ้ำงานเดิม */
+const AGG  = {qwk:.62};
+
+const S = {
+  v: "summary",
+  crit: "C5",
+  hist: 5,
+  sample: 28,
+  method: "strat",
+  set: "dev",
+  proposalDone: false
+};
+
+const SCREENS = [
+  ["setup",     "1 · เริ่มรอบทดสอบ"],
+  ["summary",   "2 · สรุปผล"],
+  ["criterion", "3 · เจาะรายเกณฑ์"],
+  ["proposal",  "4 · ข้อเสนอการปรับปรุง"],
+  ["history",   "5 · ประวัติการปรับ"],
+  ["terms",     "6 · เทียบข้ามภาค"]
+];
+
+const esc = s => String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const C = id => CRIT.find(c=>c.id===id);
+const pct = x => Math.round(x*100);
+
+/* ============================================================
+   หน้า 1 — เริ่มรอบทดสอบ
+   ============================================================ */
+function vSetup(){
+  const hours = (S.sample*7*1.4/60).toFixed(1);
+  const calls = S.sample*7;
+  const meth = {
+    rand:"สุ่มล้วนจากทั้งชั้น",
+    strat:"แบ่งชั้นตามคะแนนเดิม",
+    unsure:"เจาะเฉพาะที่ AI ไม่มั่นใจ"
+  }[S.method];
+
+  return `
+  <div class="grid2">
+   <div>
+    <div class="card">
+      <h2>รอบทดสอบใหม่</h2>
+      <div class="sub">เลือกว่าจะเอางานชุดไหนมาวัดว่า AI ให้คะแนนตรงกับอาจารย์แค่ไหน</div>
+
+      <div class="field">
+        <label>กิจกรรมการประเมิน</label>
+        <select><option>ทุกชิ้นงานที่ตรวจแล้วในภาค 2/2569 (5 ชิ้นงาน)</option>
+        <option>Wireframe แอปจองห้องซ้อม</option><option>Hi-fi หน้าชำระเงิน</option></select>
+      </div>
+
+      <div class="field">
+        <label>เวอร์ชันของ rubric ที่จะทดสอบ</label>
+        <select><option>v3.0 — ใช้อยู่ปัจจุบัน (14 ธ.ค. 69)</option><option>v2.1</option><option>v2.0</option></select>
+      </div>
+
+      <div class="field">
+        <label>ชุดข้อมูลที่จะใช้</label>
+        <div class="radios">
+          <label class="radio ${S.set==="dev"?"on":""}" data-a="set" data-x="dev">
+            <input type="radio" ${S.set==="dev"?"checked":""}>
+            <div><div class="t1">ชุดพัฒนา (dev) — 92 ชิ้น</div>
+            <div class="t2">ใช้ปรับ rubric และ prompt ได้ · เปิดดูกี่ครั้งก็ได้</div></div>
+          </label>
+          <label class="radio" style="opacity:.55;cursor:not-allowed">
+            <input type="radio" disabled>
+            <div><div class="t1">🔒 ชุดทดสอบ (test) — 34 ชิ้น</div>
+            <div class="t2">ล็อกอยู่ · เปิดได้ครั้งเดียวในวันที่ 31 มี.ค. 70 · เปิดแล้วห้ามปรับอะไรอีก</div></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>จำนวนตัวอย่างที่จะให้อาจารย์ตรวจแบบ blind</label>
+        <div class="slider">
+          <input type="range" min="10" max="60" step="2" value="${S.sample}" id="samp">
+          <div class="val">${S.sample}</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>วิธีสุ่ม</label>
+        <div class="radios">
+          <label class="radio ${S.method==="rand"?"on":""}" data-a="meth" data-x="rand">
+            <input type="radio" ${S.method==="rand"?"checked":""}>
+            <div><div class="t1">สุ่มล้วนจากทั้งชั้น</div>
+            <div class="t2">ตรงไปตรงมาที่สุด แต่ที่ n เท่านี้อาจไม่มีงานระดับ "ต้องปรับปรุง" ติดมาเลย</div></div>
+          </label>
+          <label class="radio ${S.method==="strat"?"on":""}" data-a="meth" data-x="strat">
+            <input type="radio" ${S.method==="strat"?"checked":""}>
+            <div><div class="t1">แบ่งชั้นตามคะแนนเดิม <span class="tag">แนะนำ</span></div>
+            <div class="t2">การันตีว่ามีงานครบทุกระดับคุณภาพ · ตัวเลขที่ได้ยังใช้อ้างในรายงานได้</div></div>
+          </label>
+          <label class="radio ${S.method==="unsure"?"on":""}" data-a="meth" data-x="unsure">
+            <input type="radio" ${S.method==="unsure"?"checked":""}>
+            <div><div class="t1">เจาะเฉพาะที่ AI ไม่มั่นใจ</div>
+            <div class="t2">หาจุดอ่อนได้เร็วที่สุด แต่ตัวอย่างเอนไปทางงานยาก</div></div>
+          </label>
+        </div>
+        ${S.method==="unsure" ? `<div class="note d"><b>ตัวเลขจากวิธีนี้ห้ามเอาไปเขียนในรายงาน</b>
+          ตัวอย่างถูกคัดมาเฉพาะงานที่ AI ไม่มั่นใจ ค่าความสอดคล้องที่ได้จะต่ำกว่าความจริงเสมอ
+          ใช้ได้อย่างเดียวคือใช้หาว่าเกณฑ์ไหนพัง แล้วต้องกลับไปวัดซ้ำด้วยวิธีแบ่งชั้น</div>` : ``}
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>ลำดับที่ระบบบังคับ</h2>
+      <div class="sub">ห้ามสลับ · เป็นเงื่อนไขที่ทำให้ตัวเลขทั้งหมดมีความหมาย</div>
+      <table class="tbl">
+        <tr><td style="width:26px" class="r">1</td>
+          <td><b>AI ตรวจก่อน</b> แล้วผลถูกปิดผนึกไว้ อาจารย์มองไม่เห็น</td></tr>
+        <tr><td class="r">2</td>
+          <td><b>อาจารย์ตรวจแบบ blind</b> — ไม่เห็นคะแนน AI ไม่เห็นชื่อกลุ่ม ไม่เห็นคะแนนที่เคยให้ไว้</td></tr>
+        <tr><td class="r">3</td>
+          <td><b>เผยผลพร้อมกันทั้งชุด</b> เมื่อตรวจครบแล้วเท่านั้น — ไม่เผยทีละชิ้นระหว่างตรวจ</td></tr>
+      </table>
+      <div class="note w"><b>ทำไมต้องเผยทีหลังทั้งชุด</b>
+      ถ้าเผยทีละชิ้น คะแนนของชิ้นที่ 5 จะถูกดึงเข้าหา AI ไปแล้วจากการเห็นผลของชิ้นที่ 1–4
+      ตัวเลขความสอดคล้องจะสูงขึ้นโดยที่ระบบไม่ได้เก่งขึ้นเลย</div>
+    </div>
+   </div>
+
+   <div>
+    <div class="card">
+      <h2>ก่อนกดยืนยัน</h2>
+      <div class="sub">${S.sample} ชิ้น × 7 เกณฑ์ · ${meth}</div>
+      <div class="costrow"><div>จำนวนการเรียกโมเดล</div><div class="v">${calls} ครั้ง</div></div>
+      <div class="costrow"><div>เวลา GPU โดยประมาณ</div><div class="v">~${Math.ceil(S.sample*7*9/60)} นาที</div></div>
+      <div class="costrow"><div>ค่าใช้จ่าย (รันบนเครื่องคณะ)</div><div class="v">฿0</div></div>
+      <div class="costrow hi"><div><b>เวลาอาจารย์ที่ต้องใช้ตรวจ blind</b></div><div class="v">~${hours} ชม.</div></div>
+      <div class="note"><b>ต้นทุนจริงของรอบทดสอบคือเวลาอาจารย์ ไม่ใช่เวลา GPU</b>
+      ตัวเลขข้างบนคำนวณจาก 1.4 นาทีต่อเกณฑ์ ซึ่งเป็นค่าที่วัดได้จริงจากรอบก่อน</div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn pri" data-a="go" data-x="summary">เริ่มรอบทดสอบ</button>
+        <button class="btn">บันทึกร่าง</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>ขนาดตัวอย่างพอไหม</h2>
+      <div class="sub">คำเตือนตรง ๆ ก่อนเสียเวลาตรวจ</div>
+      ${S.sample < 20 ? `<div class="note d">ที่ ${S.sample} ชิ้น แต่ละเกณฑ์จะมีข้อมูลแค่ ${S.sample} จุด
+        <b>ยังบอกไม่ได้ว่าเกณฑ์ไหนพังจริงหรือแค่บังเอิญ</b> ใช้ดูภาพรวมได้ แต่ห้ามใช้ตัดสินว่าจะแก้เกณฑ์ไหน</div>`
+      : `<div class="note"><b>พอสำหรับภาพรวม</b> แต่รายเกณฑ์ยังหยาบ —
+        ระบบจะติดป้าย "ยังสรุปไม่ได้" ให้เองบนเกณฑ์ที่ข้อมูลน้อยเกินจะฟันธง</div>`}
+      <div class="note lk">🔒 <b>ชุด test ยังไม่เคยถูกเปิด</b><br>
+      รอบทดสอบทั้งหมดที่ทำมา ${HIST.length} ครั้ง รันบนชุด dev ล้วน<br>
+      <span class="mono" style="color:var(--ink-3)">last_test_access = null</span></div>
+    </div>
+   </div>
+  </div>`;
+}
+
+/* ============================================================
+   หน้า 2 — สรุปผล (หัวใจของ ticket)
+   ============================================================ */
+function cmCell(i,j){
+  const v = CM[i][j];
+  const p = (v/TOTAL*100);
+  const d = Math.abs(i-j);
+  const cls = d===0 ? "diag" : (d>=2 ? "far" : "");
+  const alpha = v===0 ? 0 : Math.min(.85, .10 + v/62);
+  const bg = d===0 ? `rgba(13,122,79,${alpha})` : (d>=2 ? `rgba(179,38,30,${alpha})` : `rgba(138,138,130,${alpha*.55})`);
+  return `<td><div class="cell ${cls}" style="background:${bg}">
+    <div class="n">${v||"·"}</div>${v?`<div class="p">${p.toFixed(0)}%</div>`:""}</div></td>`;
+}
+
+function confusion(){
+  let rows = "";
+  for(let i=0;i<4;i++){
+    rows += `<tr><th>${LEVELS[i].n} · ${LEVELS[i].name}</th>` +
+      [0,1,2,3].map(j=>cmCell(i,j)).join("") +
+      `<th style="font-family:var(--mono);font-weight:500">${CM[i].reduce((a,b)=>a+b,0)}</th></tr>`;
+  }
+  const colSum = [0,1,2,3].map(j=>CM.reduce((s,r)=>s+r[j],0));
+  return `
+  <div style="overflow-x:auto">
+   <div class="axl" style="margin-bottom:5px">คอลัมน์ = ระดับที่ <span style="color:var(--ai);font-weight:600">AI</span> ให้ &nbsp;·&nbsp; แถว = ระดับที่ <span style="color:var(--teacher);font-weight:600">อาจารย์</span> ให้</div>
+   <div class="cm"><table>
+    <tr><th></th>${LEVELS.map(l=>`<th>${l.n}<br><span style="font-weight:400">${l.name}</span></th>`).join("")}<th>รวม</th></tr>
+    ${rows}
+    <tr><th>รวม</th>${colSum.map(v=>`<th style="font-family:var(--mono);font-weight:500">${v}</th>`).join("")}
+      <th style="font-family:var(--mono);font-weight:600">${TOTAL}</th></tr>
+   </table></div>
+   <div class="cmlegend">
+     <span><span style="display:inline-block;width:11px;height:11px;background:var(--teacher);border-radius:2px;vertical-align:-1px"></span>
+       แนวทแยง = ตรงกันพอดี · ${diag} จาก ${TOTAL}</span>
+     <span><span style="display:inline-block;width:11px;height:11px;background:var(--danger);border-radius:2px;vertical-align:-1px"></span>
+       ห่างกัน 2 ระดับขึ้นไป · ${far} ครั้ง — พวกนี้ต้องไปดูทีละชิ้น</span>
+     <span>เหนือแนวทแยง = AI ให้สูงกว่า (${aiHi}) · ใต้ = AI ให้ต่ำกว่า (${aiLo})</span>
+   </div>
+  </div>`;
+}
+
+function ceilBars(){
+  const row = (k, ai, ce, unit) => `
+    <div class="ceilrow">
+      <div class="k">${k}</div>
+      <div class="track">
+        <div class="fill ai" style="width:${ai}%"></div>
+        <div class="ceilmark" style="left:${ce}%" data-l="เพดาน ${unit==='%'?ce+'%':ce}"></div>
+      </div>
+      <div class="v">${unit==='%'?ai+'%':ai}</div>
+    </div>`;
+  return `<div class="ceil">
+    ${row("ตรงกันพอดี", pctEx, CEIL.exact, '%')}
+    ${row("คลาดไม่เกิน 1 ระดับ", pctNe, CEIL.near, '%')}
+    <div class="ceilrow">
+      <div class="k">QWK</div>
+      <div class="track"><div class="fill ai" style="width:${AGG.qwk*100}%"></div>
+        <div class="ceilmark" style="left:${CEIL.qwk*100}%" data-l="เพดาน ${CEIL.qwk.toFixed(2)}"></div></div>
+      <div class="v">${AGG.qwk.toFixed(2)}</div>
+    </div>
+  </div>`;
+}
+
+function dotChart(){
+  const sorted = [...CRIT].sort((a,b)=>a.qwk-b.qwk);
+  return sorted.map(c=>{
+    const ax = c.qwk*100, tx = c.ceil*100;
+    const gap = c.ceil-c.qwk;
+    const flag = gap>=.25 ? `<span class="tag d">ห่างเพดานมาก</span>`
+              : gap>=.13 ? `<span class="tag w">ยังห่าง</span>`
+              : `<span class="tag t">ใกล้เพดาน</span>`;
+    return `<div class="dot" data-a="crit" data-x="${c.id}" style="cursor:pointer">
+      <div class="name"><span class="id">${c.id}</span>${esc(c.name)}
+        <div style="font-size:11px;color:var(--ink-3)">n=${c.n} · ตรงพอดี ${c.exact}% · ±1 ระดับ ${c.near}%</div></div>
+      <div>
+        <div class="lane">
+          <div class="axis"></div>
+          <div class="gap" style="left:${Math.min(ax,tx)}%;width:${Math.abs(tx-ax)}%"></div>
+          <div class="pt ai" style="left:${ax}%" title="AI ${c.qwk.toFixed(2)}"></div>
+          <div class="pt t" style="left:${tx}%" title="เพดานมนุษย์ ${c.ceil.toFixed(2)}"></div>
+        </div>
+      </div>
+      <div class="num">${c.qwk.toFixed(2)} <span style="color:var(--ink-3)">/ ${c.ceil.toFixed(2)}</span></div>
+      <div class="flag">${flag}</div>
+    </div>`;
+  }).join("");
+}
+
+function vSummary(){
+  const worst = [...CRIT].sort((a,b)=>(a.qwk-a.ceil)-(b.qwk-b.ceil))[0];
+  return `
+  <div class="setbar" style="margin-bottom:16px">
+    <span>รอบทดสอบ <b>#7</b> · 6 ก.พ. 70</span><div class="d"></div>
+    <span>28 ชิ้น × 7 เกณฑ์ = <b>196 การตัดสิน</b></span><div class="d"></div>
+    <span>rubric <b>v3.0</b></span><div class="d"></div>
+    <span>ชุด <b>dev</b> · แบ่งชั้นตามคะแนนเดิม</span><div class="d"></div>
+    <span class="tag lk">🔒 ชุด test ยังไม่ถูกแตะ</span>
+  </div>
+
+  <div class="grid2">
+   <div>
+    <div class="card">
+      <div class="verdict">
+        AI ให้ระดับ <b>ตรงกับที่อาจารย์ให้พอดี ${pctEx}%</b> ของการตัดสินทั้งหมด
+        และ <b>คลาดไม่เกิน 1 ระดับ ${pctNe}%</b>
+      </div>
+      <div class="headline">
+        <div class="big"><div class="n">${pctEx}%</div><div class="l">ตรงกันพอดี</div>
+          <div class="c">อาจารย์ตรวจงานเดิมซ้ำเองได้ <b>${CEIL.exact}%</b> — นี่คือเพดาน</div></div>
+        <div class="big"><div class="n">${pctNe}%</div><div class="l">คลาดไม่เกิน 1 ระดับ</div>
+          <div class="c">เพดาน <b>${CEIL.near}%</b></div></div>
+      </div>
+      <div class="note"><b>อ่านตัวเลขนี้อย่างไร</b><br>
+      ${pctEx}% ฟังดูไม่สูง แต่ตัวเทียบไม่ใช่ 100% — เพราะ<b>คนตรวจงานเดียวกันสองครั้งห่างกันสามสัปดาห์
+      ยังให้ระดับเดิมได้แค่ ${CEIL.exact}%</b> ช่องว่างจริงที่เหลือคือ ${CEIL.exact-pctEx} จุด ไม่ใช่ ${100-pctEx} จุด</div>
+      ${ceilBars()}
+      <div class="note" style="margin-top:18px">
+      <b>QWK</b> คือค่าที่หักผลของการเดาถูกโดยบังเอิญออกไปแล้ว และลงโทษการคลาดไกลหนักกว่าคลาดใกล้
+      · 0 = เท่ากับเดา · 1 = ตรงกันทุกครั้ง · ค่านี้คือตัวเลขที่ใช้อ้างในรายงาน ส่วนเปอร์เซ็นต์ข้างบนใช้สื่อสาร</div>
+    </div>
+
+    <div class="card">
+      <h2>AI พลาดไปทางไหน</h2>
+      <div class="sub">ตารางนี้บอกทั้งความตรง ทิศทางของความคลาด และการกระจาย ในภาพเดียว</div>
+      ${confusion()}
+    </div>
+
+    <div class="card">
+      <h2>แยกรายเกณฑ์ — เรียงจากที่ห่างเพดานมากที่สุด</h2>
+      <div class="sub">จุดม่วง = AI · จุดเขียว = เพดานมนุษย์ของเกณฑ์นั้น · ยิ่งเส้นเชื่อมยาว ยิ่งมีที่ให้แก้</div>
+      ${dotChart()}
+      <div class="scaleax" style="margin-left:222px;margin-right:132px"><span>QWK 0</span><span>0.5</span><span>1.0</span></div>
+      <div class="note w" style="margin-top:14px"><b>เพดานของแต่ละเกณฑ์ไม่เท่ากัน</b>
+      C6 (micro-copy) อาจารย์เองยังตรวจซ้ำได้แค่ 0.55 — <b>ต่อให้ AI ทำได้ 0.55 ก็แปลว่าดีเท่าที่เป็นไปได้แล้ว</b>
+      ห้ามเทียบทุกเกณฑ์กับ 1.00 เส้นเดียว</div>
+    </div>
+
+    <div class="card">
+      <h2>งานที่ต่างกันมากที่สุด</h2>
+      <div class="sub">ห่างกัน 2 ระดับขึ้นไป · ${far} รายการ — นี่คือที่ที่จะเจอสาเหตุจริง ไม่ใช่ในตัวเลขสรุป</div>
+      <table class="tbl">
+        <tr><th>งาน</th><th>เกณฑ์</th><th class="r">AI</th><th class="r">อาจารย์</th><th>สาเหตุที่พบตอนดูซ้ำ</th><th></th></tr>
+        ${OUTLIERS.map(o=>`<tr>
+          <td>${esc(o.g)}<div style="color:var(--ink-3);font-size:11px">${esc(o.w)}</div></td>
+          <td><span class="mono">${o.c}</span></td>
+          <td class="r" style="color:var(--ai);font-weight:600">${o.ai}</td>
+          <td class="r" style="color:var(--teacher);font-weight:600">${o.me}</td>
+          <td style="font-size:12px;color:var(--ink-2)">${esc(o.why)}</td>
+          <td><span class="link" data-a="crit" data-x="${o.c}">เปิดดู</span></td></tr>`).join("")}
+      </table>
+      <div class="note"><b>สามในรายการนี้ไม่ใช่ปัญหาของ rubric</b>
+      (ไฟล์อยู่นอก frame แรก · ภาพ export ความละเอียดต่ำ) — เป็นปัญหาของ<b>ชั้นอ่านไฟล์</b>
+      แก้ข้อความเกณฑ์ไปก็ไม่หาย ระบบจึงต้องแยกป้ายสองอย่างนี้ออกจากกัน</div>
+    </div>
+   </div>
+
+   <div>
+    <div class="card">
+      <h2>ควรทำอะไรต่อ</h2>
+      <div class="sub">เรียงตามผลที่จะได้ต่อแรงที่ลง</div>
+      <table class="tbl">
+        <tr><td><b>1. แก้เกณฑ์ ${worst.id} ${esc(worst.name)}</b>
+          <div style="font-size:12px;color:var(--ink-2)">ห่างเพดาน ${(worst.ceil-worst.qwk).toFixed(2)}
+          และ <b>AI ให้สูงกว่าอาจารย์อย่างเป็นระบบ +${worst.bias.toFixed(2)} ระดับ</b> — ความเอนทางเดียวแบบนี้แก้ได้ด้วยข้อความ</div>
+          <div style="margin-top:6px"><button class="btn" data-a="go" data-x="proposal">ดูข้อเสนอ</button></div></td></tr>
+        <tr><td><b>2. ซ่อมชั้นอ่านไฟล์ก่อนแก้ rubric</b>
+          <div style="font-size:12px;color:var(--ink-2)">3 จาก ${far} รายการที่ห่างสุดเกิดจากอ่านไฟล์ไม่ครบ</div></td></tr>
+        <tr><td><b>3. C6 ปล่อยไว้ก่อน</b>
+          <div style="font-size:12px;color:var(--ink-2)">เพดานของมันเองอยู่ที่ 0.55 · แก้ไปก็ขยับได้ไม่เกิน 0.21</div></td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2 style="color:var(--warn)">สิ่งที่ตัวเลขภาพรวมซ่อนไว้</h2>
+      <div class="sub">ระบบต้องพูดเรื่องนี้เอง ไม่ใช่รอให้คนสังเกต</div>
+      <div class="note w">
+      ภาพรวม AI ให้สูงกว่า ${aiHi} ครั้ง ต่ำกว่า ${aiLo} ครั้ง
+      <b>เกือบเท่ากัน ดูเหมือนไม่มีความเอนไปทางใด</b><br><br>
+      แต่พอแยกรายเกณฑ์: <b>C5 เอนสูง +0.39 · C6 เอนต่ำ −0.32 · C7 เอนต่ำ −0.25</b><br><br>
+      <b>ความเอนสองทางหักล้างกันจนหายไปจากตัวเลขรวม</b> ถ้าดูแค่ค่าเฉลี่ยจะสรุปว่าระบบไม่มีปัญหาเรื่องความเอน
+      ทั้งที่มีสามเกณฑ์ที่เอนแรง</div>
+    </div>
+
+    <div class="card">
+      <h2>ความน่าเชื่อของตัวเลขชุดนี้</h2>
+      <table class="tbl">
+        <tr><td>ขนาดตัวอย่าง</td><td class="r">28 ชิ้น</td></tr>
+        <tr><td>ต่อหนึ่งเกณฑ์</td><td class="r">28 จุด</td></tr>
+        <tr><td>ช่วงความเชื่อมั่น QWK รวม</td><td class="r">0.52–0.71</td></tr>
+        <tr><td>ต่อเกณฑ์</td><td class="r" style="color:var(--warn)">±0.18</td></tr>
+      </table>
+      <div class="note w"><b>ที่ n=28 ต่อเกณฑ์ ความต่างของ QWK น้อยกว่า 0.18 ยังแยกจากความบังเอิญไม่ได้</b>
+      C1 (0.71) กับ C7 (0.64) จึงถือว่า<b>เท่ากัน</b> ในรอบนี้ ห้ามเรียงอันดับแล้วไล่แก้ทีละข้อจากตัวเลขนี้อย่างเดียว</div>
+    </div>
+
+    <div class="card">
+      <h2>ส่งออก</h2>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <button class="btn">คัดลอกตารางสับสน</button>
+        <button class="btn">คัดลอกตารางรายเกณฑ์</button>
+        <button class="btn">บันทึกภาพสำหรับรายงาน (PNG)</button>
+      </div>
+      <div class="note" style="font-size:11.5px">ทุกภาพที่ส่งออกฝังข้อความกำกับไปด้วย:
+      รอบที่ · วันที่ · เวอร์ชัน rubric · ขนาดตัวอย่าง · วิธีสุ่ม · ชุดข้อมูล — เพื่อไม่ให้ภาพหลุดไปอยู่ในรายงานโดยไม่มีบริบท</div>
+    </div>
+   </div>
+  </div>`;
+}
+
+/* ============================================================
+   หน้า 3 — เจาะรายเกณฑ์
+   ============================================================ */
+function vCriterion(){
+  const c = C(S.crit);
+  const rows = OUTLIERS.filter(o=>o.c===c.id);
+  const dir = c.bias > .15 ? "สูงกว่า" : c.bias < -.15 ? "ต่ำกว่า" : "ไม่เอนไปทางใดชัดเจน";
+  const kind = {rule:"วัดได้ด้วยกฎ", mixed:"กึ่งกฎกึ่งตีความ", judge:"ต้องตีความ"}[c.kind];
+
+  return `
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <span class="crumb"><span class="link" data-a="go" data-x="summary">สรุปผล</span> ›</span>
+      ${CRIT.map(x=>`<button class="btn" style="${x.id===c.id?'background:var(--ink);color:var(--bg);border-color:var(--ink)':''};font-size:11.5px;padding:5px 10px"
+        data-a="crit" data-x="${x.id}">${x.id}</button>`).join("")}
+    </div>
+  </div>
+
+  <div class="grid2">
+   <div>
+    <div class="card">
+      <h2>${c.id} · ${esc(c.name)}</h2>
+      <div class="sub">${kind} · n=${c.n}</div>
+      <div class="headline">
+        <div class="big"><div class="n">${c.qwk.toFixed(2)}</div><div class="l">QWK ของ AI</div>
+          <div class="c">เพดานมนุษย์ของเกณฑ์นี้ <b>${c.ceil.toFixed(2)}</b> · ห่าง ${(c.ceil-c.qwk).toFixed(2)}</div></div>
+        <div class="big"><div class="n" style="color:${Math.abs(c.bias)>.15?'var(--danger)':'var(--ink)'}">${c.bias>0?"+":""}${c.bias.toFixed(2)}</div>
+          <div class="l">ระดับที่ AI ให้ ${dir} อาจารย์โดยเฉลี่ย</div>
+          <div class="c">${Math.abs(c.bias)>.15
+            ? "<b>เอนไปทางเดียว</b> — แก้ได้ด้วยการเขียนข้อความเกณฑ์ใหม่"
+            : "กระจายสองทาง — แก้ข้อความไม่ช่วย ต้องดูที่หลักฐานที่ AI ใช้"}</div></div>
+      </div>
+      ${Math.abs(c.bias)>.15 ? `<div class="note ${c.bias>0?"d":"w"}">
+        <b>ความเอนทางเดียวคือข่าวดี</b> เพราะแปลว่า AI เข้าใจ "อะไรคือดี" ตรงกับอาจารย์
+        แต่ตั้ง<b>เส้นแบ่งระดับ</b>ไว้${c.bias>0?"หลวมเกินไป":"เข้มเกินไป"} — แก้ได้ด้วยการเขียนเงื่อนไขของแต่ละระดับให้ชัดขึ้น
+        ต่างจากกรณีที่คลาดกระจายสองทาง ซึ่งแปลว่า AI ไม่เข้าใจตัวเกณฑ์เลย และการแก้ข้อความจะไม่ช่วย</div>` : ``}
+    </div>
+
+    <div class="card">
+      <h2>ข้อความของเกณฑ์นี้ใน rubric v3.0</h2>
+      <div class="diff"><div class="h">ระดับ 3 · ดี</div><div class="b">
+        flow ที่ออกแบบครอบคลุมงานหลักของผู้ใช้ และไม่มีขั้นตอนที่ขาดหายอย่างชัดเจน
+      </div></div>
+      <div class="note w" style="margin-top:12px"><b>ปัญหาที่เห็นจากรายการข้างล่าง</b>
+      คำว่า "ครอบคลุมงานหลัก" AI ตีความเป็น "มีหน้าจอครบตามจำนวน"
+      ส่วนอาจารย์ตีความเป็น "ทำงานนั้นจนจบได้จริงตาม user story ที่ให้ไว้" — สองอย่างนี้ไม่เหมือนกัน
+      และเป็นสาเหตุของ 3 ใน ${rows.length} รายการที่ห่างสุด</div>
+    </div>
+
+    <div class="card">
+      <h2>งานที่ต่างกันมากในเกณฑ์นี้</h2>
+      <div class="sub">${rows.length} รายการ · เรียงตามระยะห่าง</div>
+      ${rows.length ? `<table class="tbl">
+        <tr><th>กลุ่ม</th><th class="r">AI</th><th class="r">อาจารย์</th><th>สาเหตุ</th><th></th></tr>
+        ${rows.map(o=>`<tr><td>${esc(o.g)}<div style="color:var(--ink-3);font-size:11px">${esc(o.w)}</div></td>
+        <td class="r" style="color:var(--ai);font-weight:600">${o.ai}</td>
+        <td class="r" style="color:var(--teacher);font-weight:600">${o.me}</td>
+        <td style="font-size:12px;color:var(--ink-2)">${esc(o.why)}</td>
+        <td><span class="link">เปิดหน้าตรวจ</span></td></tr>`).join("")}
+      </table>` : `<div class="note">ไม่มีชิ้นไหนห่างกันถึง 2 ระดับในเกณฑ์นี้</div>`}
+      <div class="note"><b>ปุ่ม "เปิดหน้าตรวจ"</b> พาไปที่หน้าจอตรวจงาน (ticket 21) โดยเปิดที่เกณฑ์นี้
+      พร้อมหลักฐานที่ AI อ้างปักไว้ — เพื่อให้ตอบได้ว่า AI ดูอะไรอยู่ตอนให้ระดับนั้น</div>
+    </div>
+   </div>
+
+   <div>
+    <div class="card">
+      <h2>เทียบกับเกณฑ์อื่น</h2>
+      <table class="tbl">
+        ${[...CRIT].sort((a,b)=>a.qwk-b.qwk).map(x=>`<tr style="${x.id===c.id?'background:var(--panel-2)':''}">
+          <td><span class="mono">${x.id}</span> ${esc(x.name).slice(0,22)}</td>
+          <td class="r">${x.qwk.toFixed(2)}</td>
+          <td class="r" style="color:var(--ink-3)">${x.ceil.toFixed(2)}</td></tr>`).join("")}
+      </table>
+    </div>
+    <div class="card">
+      <h2>รูปแบบที่เห็นซ้ำ</h2>
+      <div class="note"><b>เกณฑ์ที่วัดได้ด้วยกฎ ทำได้ดีกว่าเกณฑ์ที่ต้องตีความทุกข้อ</b><br>
+      C2 C3 C7 (กฎ) เฉลี่ย 0.74 · C5 C6 (ตีความ) เฉลี่ย 0.33<br><br>
+      สอดคล้องกับที่ ticket 09 เขียนไว้ล่วงหน้า — <b>ผลนี้ยืนยันสมมติฐาน ไม่ใช่เรื่องเซอร์ไพรส์</b>
+      และเป็นเหตุผลว่าทำไมชั้นกฎ deterministic ถึงเป็นตัวประกันของโครงงาน</div>
+    </div>
+    <div class="card">
+      <h2>ถ้าเกณฑ์นี้เกินครึ่งห้องต้องแก้</h2>
+      <div class="note d">เมื่อเกณฑ์ใดถูกอาจารย์แก้เกิน <b>30% ของทั้งชั้น</b>
+      ระบบจะแจ้งว่าเป็น <b>"AI เข้าใจเกณฑ์นี้ผิดทั้งคอลัมน์"</b> ไม่ใช่ "ผู้ตรวจให้คะแนนเพี้ยน"
+      — สองอย่างนี้แก้คนละทาง จึงต้องเป็นการแจ้งเตือนคนละแบบ</div>
+    </div>
+   </div>
+  </div>`;
+}
+
+/* ============================================================
+   หน้า 4 — ข้อเสนอการปรับปรุง
+   ============================================================ */
+function vProposal(){
+  return `
+  <div class="setbar" style="margin-bottom:16px">
+    <span>ข้อเสนอ <b>#12</b> · สร้างจากรอบทดสอบ #7</span><div class="d"></div>
+    <span>เกณฑ์ <b>C5 การออกแบบ flow ตามโจทย์ผู้ใช้</b></span><div class="d"></div>
+    <span class="tag w">รออาจารย์ตัดสิน</span>
+  </div>
+
+  <div class="grid2">
+   <div>
+    <div class="card">
+      <h2>ระบบเสนอให้แก้ข้อความของเกณฑ์</h2>
+      <div class="sub">เสนอจากรูปแบบความคลาดที่พบ ไม่ใช่จากการเดา — AI ให้สูงกว่า +0.39 ระดับอย่างเป็นระบบ</div>
+
+      <div class="diff" style="margin-bottom:10px">
+        <div class="h">ระดับ 3 · ดี — ข้อความเดิม (v3.0)</div>
+        <div class="b"><span class="del">flow ที่ออกแบบครอบคลุมงานหลักของผู้ใช้ และไม่มีขั้นตอนที่ขาดหายอย่างชัดเจน</span></div>
+      </div>
+      <div class="diff">
+        <div class="h">ระดับ 3 · ดี — ข้อความที่เสนอ (v3.1)</div>
+        <div class="b"><span class="ins">ผู้ใช้ทำ user story ที่โจทย์กำหนดจนจบได้ครบทุกข้อ
+        โดยมีหน้าจอรองรับทั้งกรณีสำเร็จและกรณีที่ผู้ใช้ทำผิดพลาดอย่างน้อยหนึ่งกรณี
+        <b>การมีหน้าจอครบตามจำนวนไม่นับว่าผ่านเกณฑ์นี้</b></span></div>
+      </div>
+
+      <div class="note"><b>สิ่งที่เปลี่ยนคือการเปลี่ยนเกณฑ์จาก "มีอะไรบ้าง" เป็น "ทำอะไรได้"</b>
+      พร้อมประโยคปิดช่องที่ AI เคยตีความผิดโดยตรง</div>
+    </div>
+
+    <div class="card">
+      <h2>ผลจำลอง ถ้ารับข้อเสนอนี้</h2>
+      <div class="sub">รันซ้ำบน <b>ชุดตรวจสอบภายใน 24 ชิ้น</b> ที่กันไว้จากชุด dev — <b>ไม่ใช่ชุด test</b></div>
+      <table class="tbl">
+        <tr><th></th><th class="r">ก่อน</th><th class="r">หลัง</th><th class="r">เปลี่ยน</th></tr>
+        <tr><td>QWK ของ C5</td><td class="r">0.31</td><td class="r">0.49</td>
+          <td class="r" style="color:var(--teacher);font-weight:600">+0.18</td></tr>
+        <tr><td>ความเอนของ C5</td><td class="r">+0.39</td><td class="r">+0.11</td>
+          <td class="r" style="color:var(--teacher);font-weight:600">−0.28</td></tr>
+        <tr><td>QWK เฉลี่ยทุกเกณฑ์</td><td class="r">0.62</td><td class="r">0.65</td>
+          <td class="r" style="color:var(--teacher);font-weight:600">+0.03</td></tr>
+        <tr><td>QWK ของ C4 (ผลข้างเคียง)</td><td class="r">0.58</td><td class="r">0.55</td>
+          <td class="r" style="color:var(--danger);font-weight:600">−0.03</td></tr>
+      </table>
+      <div class="note w"><b>ต้องแสดงผลข้างเคียงเสมอ</b>
+      C4 แย่ลงเล็กน้อยเพราะข้อความใหม่ของ C5 ไปทับขอบเขตของ C4
+      ระบบที่โชว์เฉพาะเกณฑ์ที่ดีขึ้นจะทำให้อาจารย์รับข้อเสนอที่ทำให้ภาพรวมแย่ลงโดยไม่รู้ตัว</div>
+
+      <div class="note lk">🔒 <b>ทำไมผลจำลองไม่ได้รันบนชุด test</b><br>
+      ถ้าเอาชุด test มาลองว่าข้อเสนอไหนดีขึ้น แล้วเลือกรับเฉพาะอันที่ดีขึ้น
+      <b>ชุด test จะกลายเป็นชุดที่ระบบถูกปรับให้เข้ากับมันไปแล้ว</b>
+      ตัวเลขที่ได้ตอน 31 มี.ค. 70 จะสูงเกินจริงและใช้อ้างในรายงานไม่ได้<br>
+      ชุด test เปิดได้ครั้งเดียว หลังจากหยุดปรับทุกอย่างแล้ว</div>
+    </div>
+
+    <div class="card">
+      <h2>ต้นทุนจริงของการรับข้อเสนอ</h2>
+      <div class="sub">ส่วนที่มักถูกซ่อน</div>
+      <div class="costrow"><div>สร้าง rubric เวอร์ชันใหม่</div><div class="v">v3.0 → v3.1</div></div>
+      <div class="costrow"><div>คะแนนที่ให้ไว้แล้วภายใต้ v3.0</div><div class="v">341 การตัดสิน</div></div>
+      <div class="costrow"><div>คะแนนเดิมถูกแก้ย้อนหลังไหม</div><div class="v">ไม่ · ตรึงไว้กับ v3.0</div></div>
+      <div class="costrow hi"><div><b>ต้องตรวจ bridge set เพื่อให้เทียบข้ามเวอร์ชันได้</b></div><div class="v">18 ชิ้น · ~2.5 ชม.</div></div>
+      <div class="note d"><b>ถ้าไม่ตรวจ bridge set</b> กราฟประวัติการปรับจะขาดตอนตรงนี้
+      และจะพูดไม่ได้ว่า "ตัวเลขดีขึ้นเพราะการแก้ครั้งนี้" เพราะก่อนกับหลังวัดคนละไม้บรรทัด</div>
+    </div>
+   </div>
+
+   <div>
+    <div class="card">
+      <h2>ตัดสิน</h2>
+      <div class="field" style="margin-top:8px">
+        <label>เหตุผล (บังคับกรอกทั้งกรณีรับและไม่รับ)</label>
+        <input type="text" placeholder="เช่น รับ เพราะข้อความเดิมกำกวมจริงตามที่เห็นในกลุ่ม 04 และ 02">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <button class="btn pri">รับข้อเสนอ · สร้าง v3.1 · นัดตรวจ bridge set</button>
+        <button class="btn">รับแต่ขอแก้ข้อความเอง</button>
+        <button class="btn dg">ไม่รับ</button>
+      </div>
+      <div class="note"><b>ทุกทางเลือกถูกบันทึกเท่ากัน</b> รวมถึง "ไม่รับ"
+      เพราะการที่อาจารย์ปฏิเสธข้อเสนอ 8 จาก 12 ครั้ง เป็นผลการทดลองที่มีค่าพอ ๆ กับครั้งที่รับ</div>
+    </div>
+
+    <div class="card">
+      <h2 style="color:var(--danger)">เส้นที่ระบบไม่ข้าม</h2>
+      <div class="note d"><b>ระบบเสนอได้ แต่แก้ rubric เองไม่ได้</b>
+      ไม่ว่าผลจำลองจะดีขึ้นเท่าไร<br><br>
+      เหตุผลไม่ใช่เรื่องเทคนิค แต่เป็นเรื่องที่ต้องตอบให้ได้ว่า
+      <b>ไม้บรรทัดที่ใช้ตัดสินนักศึกษาเปลี่ยนเพราะใคร</b>
+      ถ้าคำตอบคือ "ระบบปรับเอง" หลักฐานสำหรับ TABEE 1.7 จะขาดตรงจุดที่สำคัญที่สุด</div>
+    </div>
+
+    <div class="card">
+      <h2>ข้อเสนอประเภทอื่นที่ระบบสร้างได้</h2>
+      <table class="tbl">
+        <tr><td><b>แก้ข้อความเกณฑ์</b><div style="font-size:12px;color:var(--ink-2)">ใช้เมื่อความคลาดเอนไปทางเดียว</div></td></tr>
+        <tr><td><b>เพิ่มงานตัวอย่างเป็น anchor</b><div style="font-size:12px;color:var(--ink-2)">ใช้เมื่อความคลาดกระจายสองทาง — ข้อความไม่ช่วย ต้องให้เห็นของจริง</div></td></tr>
+        <tr><td><b>ย้ายเกณฑ์ไปให้ชั้นกฎตัดสิน</b><div style="font-size:12px;color:var(--ink-2)">ใช้เมื่อเกณฑ์นั้นวัดได้ตรง ๆ อยู่แล้ว เช่น contrast</div></td></tr>
+        <tr><td><b>ประกาศว่าเกณฑ์นี้ AI ไม่ตัดสิน</b><div style="font-size:12px;color:var(--ink-2)">ใช้เมื่อ QWK ต่ำและเพดานมนุษย์ก็ต่ำ — ยอมรับว่าเป็นเรื่องของดุลพินิจ</div></td></tr>
+      </table>
+      <div class="note" style="font-size:11.5px">ข้อเสนอสองแบบหลังไม่ใช่ความล้มเหลว
+      การรู้ว่าเกณฑ์ไหนไม่ควรให้ AI ตัดสิน เป็นผลลัพธ์ของงานวิจัยเหมือนกัน</div>
+    </div>
+   </div>
+  </div>`;
+}
+
+/* ============================================================
+   หน้า 5 — ประวัติการปรับ
+   ============================================================ */
+function vHistory(){
+  const H=210, PADL=44, PADR=16;
+  const qMin=.30, qMax=.90;
+  const y = q => H - (q-qMin)/(qMax-qMin)*H;
+  const x = i => `calc(${PADL}px + (100% - ${PADL+PADR}px) * ${i/(HIST.length-1)})`;
+
+  let segs="";
+  for(let i=0;i<HIST.length-1;i++){
+    segs += `<div class="tlseg" style="left:${x(i)};top:${y(HIST[i].q)}px;
+      width:calc((100% - ${PADL+PADR}px)/${HIST.length-1});
+      transform:rotate(${Math.atan2(y(HIST[i+1].q)-y(HIST[i].q), 600/(HIST.length-1))}rad)"></div>`;
+  }
+
+  const sel = HIST[S.hist];
+  const kindTag = k => ({base:'<span class="tag">ตั้งต้น</span>',
+    prompt:'<span class="tag ai">แก้ prompt</span>',
+    rubric:'<span class="tag w">แก้ rubric · เวอร์ชันใหม่</span>',
+    rule:'<span class="tag t">ย้ายไปชั้นกฎ</span>'}[k]);
+
+  return `
+  <div class="grid2">
+   <div>
+    <div class="card">
+      <h2>ความสอดคล้องขยับอย่างไรตลอดโครงงาน</h2>
+      <div class="sub">QWK เฉลี่ยทุกเกณฑ์ บนชุด dev · แถบเขียวคือเพดานมนุษย์ · คลิกจุดเพื่อดูว่าครั้งนั้นทำอะไร</div>
+
+      <div class="tl" style="height:${H+64}px">
+        <div class="tlband" style="top:${y(CEIL.qwk+.05)}px;height:${y(CEIL.qwk-.05)-y(CEIL.qwk+.05)}px;
+          left:${PADL}px;right:${PADR}px"></div>
+        <div class="tlbandl" style="top:${y(CEIL.qwk)-8}px">เพดานมนุษย์ ${CEIL.qwk.toFixed(2)}</div>
+        ${[.3,.5,.7,.9].map(q=>`
+          <div class="tlaxis" style="top:${y(q)+26}px;left:${PADL}px;right:${PADR}px;opacity:.6"></div>
+          <div class="tly" style="top:${y(q)+26}px">${q.toFixed(1)}</div>`).join("")}
+        ${segs.replace(/top:(\d[\d.]*)px/g,(m,p)=>`top:${(+p)+26}px`)}
+        ${HIST.map((h,i)=>`<div class="tlpt ${i===S.hist?"sel":""}" data-a="hist" data-x="${i}"
+          style="left:${x(i)};top:${y(h.q)+26}px" title="${h.v} · ${h.q.toFixed(2)}"></div>`).join("")}
+        ${HIST.map((h,i)=>`<div class="tlx" style="left:${x(i)};top:${H+34}px">
+          <b style="color:var(--ink-2)">${h.v}</b><br>${h.d}</div>`).join("")}
+      </div>
+
+      <div class="note w" style="margin-top:24px"><b>เส้นนี้อ่านตรง ๆ ไม่ได้ทั้งเส้น</b>
+      จุด v2.0 เป็นต้นไปวัดด้วย rubric คนละเวอร์ชันกับจุดก่อนหน้า
+      การเทียบข้ามเวอร์ชันทำได้เพราะมี <b>bridge set</b> คั่นไว้ทุกครั้งที่เปลี่ยนเวอร์ชัน —
+      ถ้าครั้งไหนไม่ได้ตรวจ bridge set ระบบจะขีดเส้นประแทนเส้นทึบ และห้ามอ้างว่าดีขึ้นเพราะการแก้ครั้งนั้น</div>
+    </div>
+
+    <div class="card">
+      <h2>ทุกครั้งที่ปรับ</h2>
+      <table class="tbl">
+        <tr><th>เวอร์ชัน</th><th>วันที่</th><th class="r">QWK</th><th class="r">เปลี่ยน</th><th>ทำอะไร</th></tr>
+        ${HIST.map((h,i)=>{
+          const d = i? h.q-HIST[i-1].q : null;
+          return `<tr style="${i===S.hist?'background:var(--panel-2)':''};cursor:pointer" data-a="hist" data-x="${i}">
+            <td><b>${h.v}</b><div>${kindTag(h.kind)}</div></td>
+            <td style="white-space:nowrap">${h.d}</td>
+            <td class="r">${h.q.toFixed(2)}</td>
+            <td class="r" style="color:${d===null?'var(--ink-3)':d>0?'var(--teacher)':'var(--danger)'}">
+              ${d===null?"—":(d>0?"+":"")+d.toFixed(2)}</td>
+            <td style="font-size:12px;color:var(--ink-2)">${esc(h.what)}</td></tr>`;
+        }).join("")}
+      </table>
+    </div>
+   </div>
+
+   <div>
+    <div class="card">
+      <h2>${sel.v} · ${sel.d}</h2>
+      <div class="sub">${kindTag(sel.kind)}</div>
+      <div class="note">${esc(sel.what)}</div>
+      <table class="tbl">
+        <tr><td>QWK หลังปรับ</td><td class="r">${sel.q.toFixed(2)}</td></tr>
+        <tr><td>ระยะถึงเพดาน</td><td class="r">${(CEIL.qwk-sel.q).toFixed(2)}</td></tr>
+        <tr><td>ผู้อนุมัติ</td><td class="r">อ.ธนา</td></tr>
+        <tr><td>bridge set</td><td class="r">${sel.kind==="rubric"?"18 ชิ้น ✓":"ไม่ต้อง"}</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>รูปนี้ไปอยู่ในบทที่ 4</h2>
+      <div class="note"><b>สิ่งที่ภาพนี้ตอบได้</b><br>
+      การปรับ prompt ให้ผลเร็วแต่ตัน (+0.11 ในสองครั้งแรก แล้วหยุด)<br>
+      การแก้ตัว rubric ให้ผลมากกว่า (+0.06 ในครั้งเดียว)<br>
+      การย้ายไปชั้นกฎครั้งเดียวที่ทำให้แย่ลง (v2.1 −0.01) และถูกถอยกลับ<br><br>
+      <b>เส้นเข้าใกล้เพดานแบบชะลอตัว</b> — ไม่ใช่เส้นตรงพุ่งขึ้น และนั่นคือรูปร่างที่คาดไว้ล่วงหน้าใน ticket 16</div>
+      <div style="display:flex;flex-direction:column;gap:7px;margin-top:10px">
+        <button class="btn">บันทึกภาพ (PNG · 300 dpi)</button>
+        <button class="btn">คัดลอกตารางประวัติ</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>ครั้งที่ถอยกลับ</h2>
+      <div class="note w"><b>v2.1 ทำให้แย่ลง แล้วถูกถอย</b>
+      ระบบเก็บทั้งการเปลี่ยนที่สำเร็จและที่ล้มเหลวไว้เท่ากัน
+      ถ้าลบครั้งที่ล้มเหลวออก กราฟจะสวยขึ้นแต่จะกลายเป็นการเล่าเรื่องที่ไม่ตรงกับสิ่งที่เกิดขึ้น</div>
+    </div>
+   </div>
+  </div>`;
+}
+
+/* ============================================================
+   หน้า 6 — เทียบข้ามภาค
+   ============================================================ */
+function vTerms(){
+  return `
+  <div class="grid2">
+   <div>
+    <div class="card">
+      <h2>ภาค 2/2569 ระบบตรงกับอาจารย์มากกว่าภาค 1/2569 ไหม</h2>
+      <div class="sub">คำถามข้อ 6 ของ ticket นี้ · คำตอบสั้น ๆ คือ "ดูได้ แต่ยังสรุปไม่ได้"</div>
+
+      <table class="tbl">
+        <tr><th>ภาค</th><th class="r">n</th><th class="r">ตรงพอดี</th><th class="r">±1 ระดับ</th><th class="r">QWK</th><th>บริบท</th></tr>
+        ${TERMS.map(t=>`<tr><td><b>${esc(t.t)}</b></td><td class="r">${t.n}</td>
+          <td class="r">${t.exact}%</td><td class="r">${t.near}%</td><td class="r">${t.qwk.toFixed(2)}</td>
+          <td style="font-size:12px;color:var(--ink-2)">${esc(t.note)}</td></tr>`).join("")}
+        <tr><td colspan="4"><b>ต่างกัน</b></td>
+          <td class="r" style="color:var(--teacher);font-weight:600">+0.08</td>
+          <td style="font-size:12px;color:var(--warn)"><b>อยู่ในช่วงความไม่แน่นอน ±0.13 — แยกจากความบังเอิญไม่ได้</b></td></tr>
+      </table>
+
+      <div class="note d" style="margin-top:14px"><b>สามอย่างที่เปลี่ยนไปพร้อมกัน ทำให้ตัวเลขนี้อ่านเป็น "ระบบดีขึ้น" ไม่ได้</b><br><br>
+      <b>1. ชิ้นงานคนละชุด</b> — ภาค 1 วัดจาก 2 ชิ้นงานสุดท้ายของเทอม (งานยาก งานรวบยอด)
+      ภาค 2 วัดจาก 5 ชิ้นงานแรก (งานพื้นฐาน) งานพื้นฐานตรงกันง่ายกว่าโดยธรรมชาติ<br><br>
+      <b>2. นักศึกษาคนละกลุ่ม</b> — การกระจายของคุณภาพงานไม่เหมือนกัน<br><br>
+      <b>3. อาจารย์เปลี่ยนไปด้วย</b> — ผ่านการตรวจกับ rubric นี้มาทั้งเทอมแล้ว
+      อาจารย์เองก็คงเส้นคงวามากขึ้น เพดานมนุษย์จึงขยับ ไม่ใช่แค่ AI ที่ขยับ</div>
+
+      <div class="note"><b>สิ่งที่เทียบข้ามภาคได้จริง</b>
+      คือ <b>ระยะห่างจากเพดานมนุษย์ของภาคนั้น ๆ</b> ไม่ใช่ค่า QWK ดิบ
+      เพราะเพดานคือไม้บรรทัดที่ปรับตามบริบทของภาคนั้นให้อัตโนมัติอยู่แล้ว</div>
+
+      <div class="ceil" style="margin-top:16px">
+        <div class="sec">ระยะห่างจากเพดานมนุษย์ของภาคตัวเอง</div>
+        <div class="ceilrow"><div class="k">1/2569</div>
+          <div class="track"><div class="fill ai" style="width:${.54/.71*100}%"></div>
+          <div class="ceilmark" style="left:100%" data-l="เพดาน 0.71"></div></div><div class="v">0.17</div></div>
+        <div class="ceilrow"><div class="k">2/2569</div>
+          <div class="track"><div class="fill ai" style="width:${.62/.76*100}%"></div>
+          <div class="ceilmark" style="left:100%" data-l="เพดาน 0.76"></div></div><div class="v">0.14</div></div>
+      </div>
+      <div class="note w"><b>ระยะห่างลดจาก 0.17 เหลือ 0.14</b> — ทิศทางถูก แต่ขนาดยังเล็กกว่าความไม่แน่นอน
+      <b>ข้อความที่เขียนลงรายงานได้คือ "ทิศทางสอดคล้องกับสมมติฐาน แต่ยังไม่มีนัยสำคัญ"</b>
+      ไม่ใช่ "ระบบแม่นขึ้นข้ามภาค"</div>
+    </div>
+   </div>
+
+   <div>
+    <div class="card">
+      <h2>ทำไมมีข้อมูลสองภาคให้เทียบ</h2>
+      <div class="note"><b>เพราะวิชานี้เปิดสอนทุกภาค</b> และมีการซ้อมใหญ่กับ 2 ชิ้นงานสุดท้ายของภาค 1/2569
+      ถ้าไม่มีการซ้อมนั้น หน้าจอนี้จะมีข้อมูลแค่แถวเดียวและตอบคำถามข้อ 6 ไม่ได้เลย</div>
+    </div>
+
+    <div class="card">
+      <h2 style="color:var(--warn)">ข้อจำกัดที่ต้องเขียนไว้ในรายงาน</h2>
+      <div class="note w">การเทียบสองภาคนี้มี n รวมกันแค่ 54 ชิ้น และเปลี่ยนตัวแปรพร้อมกันสามอย่าง
+      <b>นี่ไม่ใช่การทดลองแบบมีกลุ่มควบคุม</b> เป็นการสังเกตที่ใช้ตั้งสมมติฐานสำหรับงานต่อไป
+      ไม่ใช่หลักฐานยืนยัน</div>
+    </div>
+
+    <div class="card">
+      <h2>ถ้าอยากได้คำตอบจริง ต้องทำอะไร</h2>
+      <table class="tbl">
+        <tr><td>รันระบบสองเวอร์ชันบน<b>งานชุดเดียวกัน</b> แล้วเทียบ — ไม่ต้องรอข้ามภาค</td></tr>
+        <tr><td>ตรึงชิ้นงานให้เหมือนกันข้ามภาค แล้วค่อยเทียบ</td></tr>
+        <tr><td>วัดเพดานมนุษย์ทุกภาค ไม่ใช่วัดครั้งเดียวแล้วใช้ตลอด</td></tr>
+      </table>
+      <div class="note" style="font-size:11.5px">ข้อแรกทำได้ทันทีและไม่ต้องรออะไรเลย —
+      เป็นเหตุผลว่าทำไมหน้าประวัติการปรับ (หน้า 5) ถึงเป็นหลักฐานที่แข็งกว่าหน้านี้</div>
+    </div>
+   </div>
+  </div>`;
+}
+
+/* ============================================================ */
+const VIEWS = {setup:vSetup, summary:vSummary, criterion:vCriterion,
+               proposal:vProposal, history:vHistory, terms:vTerms};
+
+function render(){
+  document.getElementById("app").innerHTML = VIEWS[S.v]();
+  document.getElementById("screenname").textContent =
+    SCREENS.find(s=>s[0]===S.v)[1];
+  document.getElementById("bar").innerHTML = SCREENS.map(s=>
+    `<button class="${s[0]===S.v?"on":""}" data-a="go" data-x="${s[0]}">${s[1]}</button>`).join("");
+  const sl = document.getElementById("samp");
+  if(sl) sl.oninput = e => { S.sample = +e.target.value; render();
+    const n=document.getElementById("samp"); if(n){n.focus();} };
+}
+
+document.addEventListener("click", e=>{
+  const el = e.target.closest("[data-a]");
+  if(!el) return;
+  const a = el.dataset.a, x = el.dataset.x;
+  if(a==="go"){ S.v = x; scrollTo(0,0); }
+  if(a==="crit"){ S.crit = x; S.v = "criterion"; scrollTo(0,0); }
+  if(a==="hist"){ S.hist = +x; }
+  if(a==="meth"){ S.method = x; }
+  if(a==="set"){ S.set = x; }
+  render();
+});
+
+document.addEventListener("keydown", e=>{
+  const t = document.activeElement ? document.activeElement.tagName : "";
+  if(t==="INPUT"||t==="SELECT"||t==="TEXTAREA") return;
+  const i = SCREENS.findIndex(s=>s[0]===S.v);
+  if(e.key==="ArrowLeft"){ S.v = SCREENS[(i-1+SCREENS.length)%SCREENS.length][0]; scrollTo(0,0); render(); }
+  if(e.key==="ArrowRight"){ S.v = SCREENS[(i+1)%SCREENS.length][0]; scrollTo(0,0); render(); }
+});
+
+const q = new URL(location).searchParams.get("v");
+if(q && VIEWS[q]) S.v = q;
+render();
+</script>

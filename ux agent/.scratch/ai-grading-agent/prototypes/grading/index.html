@@ -1,0 +1,1202 @@
+<title>Prototype — หน้าจอตรวจงาน (ticket 21)</title>
+
+<!--
+  PROTOTYPE — โยนทิ้งได้ ไม่ใช่โค้ดจริง
+  สามรูปแบบของหน้าจอตรวจงาน สลับด้วย ?variant=A|B|C หรือลูกศรที่แถบล่าง
+  หกประเภทงาน สลับที่ topbar — เลือกมาให้ครอบคลุมทั้ง "หน่วยของหลักฐาน" 4 แบบ
+  และ "รูปแบบ rubric" 3 แบบ ตามที่พบในเอกสารตรวจงานฉบับที่ใช้กับ TA จริง (ticket 25)
+  ข้อมูลทั้งหมดสมมติ · ticket 21 ของ .scratch/ai-grading-agent
+-->
+
+<style>
+:root{
+  --bg:#f6f6f4; --panel:#ffffff; --panel-2:#fbfbfa; --ink:#1c1c1a; --ink-2:#5a5a54;
+  --ink-3:#8a8a82; --line:#e2e2dc; --line-2:#cfcfc7;
+  --ai:#6d4aff; --ai-bg:#f0ecff; --ai-line:#d5cbff;
+  --teacher:#0d7a4f; --teacher-bg:#e6f5ee; --teacher-line:#b9e2d0;
+  --warn:#b06a00; --warn-bg:#fdf1de; --warn-line:#f0d5a8;
+  --danger:#b3261e; --danger-bg:#fdecea; --danger-line:#f3c4bf;
+  --blind:#1a1a2e; --blind-ink:#e8e6ff;
+  --paper:#ffffff; --paper-ink:#22221f; --paper-line:#e4e4de; --paper-mute:#f2f2ee;
+  --r:10px; --mono:ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#131312; --panel:#1c1c1b; --panel-2:#232322; --ink:#eceae5; --ink-2:#a9a79f;
+  --ink-3:#78766f; --line:#302f2d; --line-2:#413f3c;
+  --ai:#a892ff; --ai-bg:#241f3d; --ai-line:#3d3363;
+  --teacher:#5bcf9b; --teacher-bg:#0f2a20; --teacher-line:#1d4b38;
+  --warn:#e6a94d; --warn-bg:#332711; --warn-line:#5c4519;
+  --danger:#ef7c72; --danger-bg:#361a17; --danger-line:#5c2b25;
+  --blind:#0c0c16; --blind-ink:#d8d5ff;
+  --paper:#f4f3ef; --paper-ink:#22221f; --paper-line:#dcdbd4; --paper-mute:#e9e8e2;
+}}
+:root[data-theme="dark"]{
+  --bg:#131312; --panel:#1c1c1b; --panel-2:#232322; --ink:#eceae5; --ink-2:#a9a79f;
+  --ink-3:#78766f; --line:#302f2d; --line-2:#413f3c;
+  --ai:#a892ff; --ai-bg:#241f3d; --ai-line:#3d3363;
+  --teacher:#5bcf9b; --teacher-bg:#0f2a20; --teacher-line:#1d4b38;
+  --warn:#e6a94d; --warn-bg:#332711; --warn-line:#5c4519;
+  --danger:#ef7c72; --danger-bg:#361a17; --danger-line:#5c2b25;
+  --blind:#0c0c16; --blind-ink:#d8d5ff;
+  --paper:#f4f3ef; --paper-ink:#22221f; --paper-line:#dcdbd4; --paper-mute:#e9e8e2;
+}
+:root[data-theme="light"]{
+  --bg:#f6f6f4; --panel:#ffffff; --panel-2:#fbfbfa; --ink:#1c1c1a; --ink-2:#5a5a54;
+  --ink-3:#8a8a82; --line:#e2e2dc; --line-2:#cfcfc7;
+  --ai:#6d4aff; --ai-bg:#f0ecff; --ai-line:#d5cbff;
+  --teacher:#0d7a4f; --teacher-bg:#e6f5ee; --teacher-line:#b9e2d0;
+  --warn:#b06a00; --warn-bg:#fdf1de; --warn-line:#f0d5a8;
+  --danger:#b3261e; --danger-bg:#fdecea; --danger-line:#f3c4bf;
+  --blind:#1a1a2e; --blind-ink:#e8e6ff;
+  --paper:#ffffff; --paper-ink:#22221f; --paper-line:#e4e4de; --paper-mute:#f2f2ee;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Leelawadee UI","Noto Sans Thai","IBM Plex Sans Thai","Sarabun",
+    -apple-system,"Segoe UI",system-ui,sans-serif;
+  font-size:13.5px;line-height:1.5;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--ai);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+select{font:inherit;color:inherit}
+h1,h2,h3,h4{margin:0;font-weight:650;letter-spacing:-.01em}
+
+/* ---------- switcher ---------- */
+.protobar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9999;
+  display:flex;align-items:center;gap:2px;background:#111;color:#fff;border-radius:999px;
+  padding:5px;box-shadow:0 6px 28px rgba(0,0,0,.4);border:1px solid #333}
+.protobar button{width:30px;height:30px;border-radius:999px;display:grid;place-items:center;color:#fff;font-size:15px}
+.protobar button:hover{background:#333}
+.protobar .lbl{padding:0 14px;font-size:12.5px;white-space:nowrap;font-weight:600}
+.protobar .lbl small{opacity:.55;font-weight:400;margin-left:7px}
+.protonote{position:fixed;left:12px;bottom:16px;z-index:9999;font-size:11px;color:var(--ink-3);
+  background:var(--panel);border:1px solid var(--line);padding:4px 9px;border-radius:999px}
+
+/* ---------- chrome ---------- */
+.topbar{min-height:46px;display:flex;align-items:center;gap:12px;padding:0 14px;flex-wrap:wrap;
+  background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50}
+.crumb{font-size:12.5px;color:var(--ink-2)}
+.crumb b{color:var(--ink);font-weight:650}
+.spacer{flex:1}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;
+  font-size:11.5px;font-weight:600;border:1px solid transparent;white-space:nowrap}
+.pill.ai{background:var(--ai-bg);color:var(--ai);border-color:var(--ai-line)}
+.pill.teacher{background:var(--teacher-bg);color:var(--teacher);border-color:var(--teacher-line)}
+.pill.warn{background:var(--warn-bg);color:var(--warn);border-color:var(--warn-line)}
+.pill.danger{background:var(--danger-bg);color:var(--danger);border-color:var(--danger-line)}
+.pill.mute{background:var(--panel-2);color:var(--ink-3);border-color:var(--line)}
+.btn{padding:6px 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--panel);
+  font-size:12.5px;font-weight:600}
+.btn:hover{background:var(--panel-2)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.primary:hover{opacity:.87}
+.btn.sm{padding:3px 9px;font-size:11.5px}
+.kbd{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line-2);border-bottom-width:2px;
+  border-radius:4px;padding:1px 5px;color:var(--ink-2);background:var(--panel-2)}
+.prog{height:5px;border-radius:999px;background:var(--line);overflow:hidden;min-width:100px}
+.prog i{display:block;height:100%;background:var(--teacher)}
+.dim{font-size:11px;color:var(--ink-3);font-family:var(--mono);letter-spacing:.02em}
+
+/* ---------- ชิ้นงาน: กระดาษ/ผืนผ้าใบ ---------- */
+.canvas{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r);
+  padding:18px;overflow:auto}
+.canvashead{display:flex;align-items:center;gap:9px;margin-bottom:11px;flex-wrap:wrap}
+.paper{background:var(--paper);color:var(--paper-ink);border:1px solid var(--paper-line);
+  border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+
+/* figma */
+.frames{display:flex;gap:20px;justify-content:center;flex-wrap:wrap}
+.frame{width:186px;flex:0 0 auto;position:relative}
+.frame .cap{font-size:10.5px;color:var(--ink-3);margin-bottom:6px;font-family:var(--mono)}
+.screen{position:relative;width:186px;height:372px;background:var(--paper);
+  border:1px solid var(--paper-line);border-radius:14px;overflow:hidden}
+.screen .st{height:20px;background:var(--paper-mute)}
+.screen .hd{height:34px;background:#5b6cff;display:flex;align-items:center;padding:0 11px;color:#fff;font-size:9px}
+.screen .bd{padding:11px;display:flex;flex-direction:column;gap:7px}
+.bar{background:#e0e0e6;border-radius:3px;height:9px}
+.bar.t{height:13px;width:62%;background:#c6c6d1}
+.bar.s{height:7px;width:80%}
+.inp{height:27px;border:1px solid #d6d6de;border-radius:6px;background:#fafaff}
+.inp.bad{border-color:#f0b4ae;background:#fff6f5}
+.cta{height:31px;border-radius:6px;background:#5b6cff}
+.cta.pale{background:#b9c0ff}
+.mcard{border:1px solid #e4e4ea;border-radius:7px;padding:8px;display:flex;flex-direction:column;gap:5px}
+.row2{display:flex;gap:6px}.row2>*{flex:1}
+.tabbar{position:absolute;bottom:0;left:0;right:0;height:32px;border-top:1px solid #e4e4ea;display:flex;background:var(--paper)}
+.tabbar i{flex:1;border-right:1px solid #f0f0f4}
+.pin{position:absolute;width:19px;height:19px;border-radius:999px;background:var(--ai);color:#fff;
+  font-size:10px;font-weight:700;display:grid;place-items:center;transform:translate(-50%,-50%);
+  box-shadow:0 0 0 3px rgba(109,74,255,.22);cursor:pointer;transition:transform .12s}
+.pin.on{background:var(--warn);box-shadow:0 0 0 5px rgba(176,106,0,.3);transform:translate(-50%,-50%) scale(1.3)}
+.pinbox{position:absolute;border:2px solid var(--warn);border-radius:5px;pointer-events:none;
+  background:rgba(176,106,0,.12);opacity:0;transition:opacity .15s}
+.pinbox.on{opacity:1}
+
+/* persona (PDF 1 หน้า) */
+.pdfpage{width:470px;margin:0 auto;padding:20px;position:relative}
+.pdfmeta{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);text-align:center;margin-bottom:8px}
+.fld{position:relative;border-radius:6px;padding:2px;transition:box-shadow .15s,background .15s}
+.fld.on{background:rgba(176,106,0,.14);box-shadow:0 0 0 2px var(--warn)}
+.fld .fnum{position:absolute;left:-11px;top:-9px;width:18px;height:18px;border-radius:999px;
+  background:var(--warn);color:#fff;font-size:10px;font-weight:700;display:none;place-items:center}
+.fld.on .fnum{display:grid}
+.phead{display:flex;gap:13px;align-items:flex-start;margin-bottom:12px}
+.photo{width:74px;height:74px;border-radius:8px;background:var(--paper-mute);flex:0 0 auto;
+  display:grid;place-items:center;font-size:26px;color:#b9b9b1}
+.pquote{border-left:3px solid #5b6cff;padding:6px 10px;background:var(--paper-mute);
+  border-radius:0 6px 6px 0;font-style:italic;font-size:12.5px;margin-bottom:12px}
+.pcols{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.pbox{border:1px solid var(--paper-line);border-radius:7px;padding:9px}
+.pbox h5{margin:0 0 5px;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8d8d84}
+.pbox ul{margin:0;padding-left:16px;font-size:12px}
+.pbox li{margin-bottom:3px}
+.pbar{height:6px;background:var(--paper-mute);border-radius:9px;margin:4px 0 8px;overflow:hidden}
+.pbar i{display:block;height:100%;background:#5b6cff}
+
+/* heuristic evaluation (ตารางรายการ finding) */
+.htable{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px}
+.htable th{text-align:left;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
+  color:#8d8d84;padding:6px 9px;border-bottom:1px solid var(--paper-line);font-weight:650}
+.htable td{padding:8px 9px;border-bottom:1px solid var(--paper-line);vertical-align:top}
+.htable tr.on td{background:rgba(176,106,0,.13);box-shadow:inset 3px 0 0 var(--warn)}
+.hchip{display:inline-block;padding:1px 7px;border-radius:5px;font-size:11px;font-weight:650;
+  background:var(--paper-mute);color:#4a4a44;white-space:nowrap}
+.hchip.bad{background:#fbe3e0;color:#a4322a}
+.hchip.ok{background:#e2f2e9;color:#166b47}
+.arrow{color:#a4322a;font-weight:700;margin:0 4px}
+.sev{display:inline-block;width:44px;text-align:center;padding:1px 0;border-radius:5px;
+  font-size:11px;font-weight:700}
+.sev.s3{background:#fbe3e0;color:#a4322a}.sev.s2{background:#fdeed6;color:#8a5500}.sev.s1{background:#eceae4;color:#6c6c64}
+.cover{display:flex;gap:4px;flex-wrap:wrap;margin-top:11px}
+.cover b{font-size:11px;color:var(--ink-3);font-family:var(--mono);width:100%;margin-bottom:2px}
+.hn{width:29px;height:26px;border-radius:6px;display:grid;place-items:center;font-size:11.5px;
+  font-weight:700;border:1px solid var(--line-2);background:var(--panel);color:var(--ink-3)}
+.hn.has{background:var(--teacher-bg);border-color:var(--teacher-line);color:var(--teacher)}
+.hn.gap{background:var(--danger-bg);border-color:var(--danger-line);color:var(--danger)}
+
+/* empathy map */
+.emap{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--paper-line);
+  border:1px solid var(--paper-line);border-radius:8px;overflow:hidden;max-width:560px;margin:0 auto}
+.equad{background:var(--paper);padding:11px;min-height:132px;position:relative;transition:box-shadow .15s}
+.equad.on{box-shadow:inset 0 0 0 3px var(--warn)}
+.equad h5{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#8d8d84;margin-bottom:7px}
+.notes{display:flex;flex-wrap:wrap;gap:5px}
+.stick{background:#fff3b0;color:#3d3418;padding:5px 7px;border-radius:3px;font-size:11.5px;
+  max-width:150px;box-shadow:0 1px 2px rgba(0,0,0,.12);transform:rotate(-.6deg)}
+.stick:nth-child(even){transform:rotate(.8deg);background:#ffe9a8}
+.stick.on{outline:2px solid var(--warn);background:#ffd166}
+.stick.miss{background:#ffd9d4;color:#7d2b23}
+
+/* ---------- เกณฑ์ / คะแนน ---------- */
+.crit{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);margin-bottom:9px;overflow:hidden}
+.crit.focus{border-color:var(--ai);box-shadow:0 0 0 3px var(--ai-bg)}
+.crit.edited{border-left:3px solid var(--teacher)}
+.crit .ch{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;cursor:pointer;width:100%;text-align:left}
+.crit .ch h4{font-size:13px;flex:1}
+.crit .cb{padding:0 12px 12px;border-top:1px dashed var(--line)}
+.levels{display:flex;gap:5px;margin:9px 0}
+.lv{flex:1;padding:7px 3px;border:1px solid var(--line-2);border-radius:8px;text-align:center;
+  font-size:11.5px;font-weight:600;background:var(--panel);position:relative}
+.lv:hover{background:var(--panel-2)}
+.lv b{display:block;font-size:16px;line-height:1.15}
+.lv.aipick{border-color:var(--ai-line);background:var(--ai-bg);color:var(--ai)}
+.lv.mine{border-color:var(--teacher);background:var(--teacher-bg);color:var(--teacher);box-shadow:0 0 0 2px var(--teacher-line)}
+.lv .tag{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:9px;
+  padding:1px 5px;border-radius:999px;background:var(--ai);color:#fff;white-space:nowrap}
+.lv.mine .tag{background:var(--teacher)}
+.why{background:var(--ai-bg);border:1px solid var(--ai-line);border-radius:8px;padding:9px 10px;font-size:12.5px}
+.why .lead{font-size:10.5px;color:var(--ai);font-weight:700;letter-spacing:.04em;margin-bottom:4px}
+.ev{display:inline-flex;align-items:center;gap:5px;margin:5px 5px 0 0;padding:3px 8px;
+  border:1px solid var(--ai-line);border-radius:999px;font-size:11.5px;background:var(--panel);color:var(--ai)}
+.ev:hover{background:var(--ai-bg)}
+.ev.on{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn)}
+.conf{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-3)}
+.conf .dots{display:flex;gap:3px}
+.conf .dots i{width:7px;height:7px;border-radius:2px;background:var(--line-2)}
+.conf .dots i.on{background:var(--ai)}
+.conf .dots i.split{background:var(--warn)}
+.note{width:100%;margin-top:8px;padding:7px 9px;border:1px solid var(--line-2);border-radius:8px;
+  background:var(--panel-2);font:inherit;font-size:12.5px;color:var(--ink);resize:vertical;min-height:34px}
+.nudge{border:1px solid var(--warn-line);background:var(--warn-bg);border-radius:var(--r);
+  padding:11px 12px;margin-bottom:10px;font-size:12.5px}
+.nudge b{color:var(--warn)}
+.nudge .acts{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap}
+
+/* ---------- VARIANT A ---------- */
+#vA .wrap{display:grid;grid-template-columns:186px 1fr 380px;height:calc(100vh - 92px)}
+#vA .list{border-right:1px solid var(--line);background:var(--panel);overflow-y:auto}
+#vA .lh{padding:9px 12px;font-size:11px;color:var(--ink-3);position:sticky;top:0;
+  background:var(--panel);border-bottom:1px solid var(--line);font-family:var(--mono)}
+#vA .li{padding:8px 12px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;
+  align-items:center;gap:7px;font-size:12.5px;width:100%;text-align:left}
+#vA .li:hover{background:var(--panel-2)}
+#vA .li.on{background:var(--ai-bg);box-shadow:inset 3px 0 0 var(--ai)}
+#vA .li .dot{width:7px;height:7px;border-radius:999px;flex:0 0 auto;background:var(--line-2)}
+#vA .li .dot.done{background:var(--teacher)}
+#vA .li .dot.q{background:var(--warn)}
+#vA .li .dot.fail{background:var(--danger)}
+#vA .mid{overflow-y:auto;padding:14px}
+#vA .side{border-left:1px solid var(--line);background:var(--panel-2);overflow-y:auto;padding:12px}
+#vA .sidefoot{position:sticky;bottom:-12px;margin:10px -12px -12px;padding:11px 12px;
+  background:var(--panel);border-top:1px solid var(--line);display:flex;gap:8px;align-items:center}
+
+/* ---------- VARIANT B ---------- */
+#vB .stage{max-width:1120px;margin:0 auto;padding:16px 16px 96px}
+#vB .critbar{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:12px 14px;margin-bottom:12px;display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+#vB .deck{display:grid;grid-template-columns:1fr 300px;gap:12px}
+@media(max-width:1000px){#vB .deck{grid-template-columns:1fr}}
+#vB .cardq{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+#vB .stack{position:relative}
+#vB .stack:before,#vB .stack:after{content:"";position:absolute;left:9px;right:9px;height:14px;
+  border:1px solid var(--line);border-bottom:0;border-radius:var(--r) var(--r) 0 0;background:var(--panel-2)}
+#vB .stack:before{top:-7px}
+#vB .stack:after{top:-13px;left:18px;right:18px;opacity:.6}
+#vB .keys{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);
+  padding:9px 16px 22px;display:flex;gap:15px;align-items:center;font-size:12px;color:var(--ink-2);
+  z-index:40;flex-wrap:wrap}
+#vB .queue{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+#vB .qi{display:flex;align-items:center;gap:8px;padding:7px 11px;border-bottom:1px solid var(--line);font-size:12px}
+#vB .qi.on{background:var(--ai-bg)}
+#vB .qi.done{color:var(--ink-3)}
+#vB .qi .n{font-family:var(--mono);font-size:11px;color:var(--ink-3);width:26px}
+
+/* ---------- VARIANT C ---------- */
+#vC .page{padding:14px;max-width:1400px;margin:0 auto}
+#vC table.mx{border-collapse:separate;border-spacing:0;width:100%;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--r);overflow:hidden;font-size:12.5px}
+#vC .mx th,#vC .mx td{padding:0;border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+#vC .mx th{background:var(--panel-2);font-weight:650;font-size:11px;color:var(--ink-2);
+  padding:8px 6px;text-align:center;vertical-align:bottom;line-height:1.25}
+#vC .mx th.name,#vC .mx td.name{text-align:left;padding-left:11px;width:180px;white-space:nowrap}
+#vC .mx td.name{padding-top:7px;padding-bottom:7px}
+#vC .sc{width:100%;height:34px;display:flex;align-items:center;justify-content:center;
+  font-weight:650;font-size:13px;position:relative}
+#vC .sc:hover{outline:2px solid var(--ai);outline-offset:-2px;z-index:2}
+#vC .h1{background:color-mix(in srgb,var(--danger-bg) 92%,transparent);color:var(--danger)}
+#vC .h2{background:color-mix(in srgb,var(--warn-bg) 80%,transparent);color:var(--warn)}
+#vC .h3{background:var(--panel);color:var(--ink-2)}
+#vC .h4{background:color-mix(in srgb,var(--teacher-bg) 75%,transparent);color:var(--teacher)}
+#vC .flag{position:absolute;top:2px;right:3px;width:6px;height:6px;border-radius:999px}
+#vC .flag.q{background:var(--warn)}#vC .flag.b{background:var(--ai)}#vC .flag.e{background:var(--teacher)}
+#vC .drawer{position:fixed;right:0;top:0;bottom:0;width:min(680px,94vw);background:var(--panel);
+  border-left:1px solid var(--line);box-shadow:-14px 0 44px rgba(0,0,0,.16);z-index:60;
+  display:flex;flex-direction:column;transform:translateX(102%);transition:transform .2s ease}
+#vC .drawer.on{transform:none}
+#vC .dh{padding:11px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#vC .db{flex:1;overflow-y:auto;padding:14px}
+#vC .colgroup{display:flex;gap:8px;margin-bottom:11px;flex-wrap:wrap}
+#vC .stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:9px 13px;min-width:116px}
+#vC .stat b{display:block;font-size:20px;line-height:1.2}
+#vC .stat span{font-size:11px;color:var(--ink-3)}
+
+/* journey map — บอร์ดแถว × คอลัมน์ */
+.jwrap{overflow-x:auto;padding-bottom:4px}
+.jgrid{display:grid;grid-template-columns:98px repeat(5,minmax(124px,1fr));gap:2px;
+  background:var(--paper-line);border:1px solid var(--paper-line);border-radius:8px;min-width:740px}
+.jc{background:var(--paper);color:var(--paper-ink);padding:8px;font-size:11.5px;line-height:1.45}
+.jc.hd{background:var(--paper-mute);font-weight:700;text-align:center;font-size:11px}
+.jc.lane{background:var(--paper-mute);font-weight:650;display:flex;align-items:center;font-size:11px}
+.jc.on{box-shadow:inset 0 0 0 3px var(--warn)}
+.jc.empty{background:repeating-linear-gradient(45deg,var(--paper),var(--paper) 5px,var(--paper-mute) 5px,var(--paper-mute) 10px)}
+.emo{font-size:19px;text-align:center;line-height:1.1}
+
+/* บอร์ดโพสต์อิท (Crazy idea / HMW / Card sorting) */
+.board{display:flex;flex-wrap:wrap;gap:7px;max-width:660px;margin:0 auto}
+.snote{width:122px;min-height:66px;background:#cfe6ff;color:#123048;border-radius:4px;padding:7px 8px 15px;
+  font-size:11px;line-height:1.4;box-shadow:0 1px 3px rgba(0,0,0,.16);position:relative;transform:rotate(-.6deg)}
+.snote:nth-child(3n){background:#d4f2d2;color:#173a1a;transform:rotate(.8deg)}
+.snote:nth-child(3n+2){background:#ffdfec;color:#4a1730;transform:rotate(.3deg)}
+.snote.on{outline:3px solid var(--warn)}
+.snote .vt{position:absolute;right:6px;bottom:5px;display:flex;gap:2px}
+.snote .vt i{width:6px;height:6px;border-radius:9px;background:#d13b3b}
+.snote .ix{position:absolute;left:6px;bottom:4px;font-size:9px;opacity:.5;font-family:var(--mono)}
+
+/* เกณฑ์แบบรายการตรวจ / กฎนับจำนวน */
+.chk{display:flex;flex-direction:column;gap:4px;margin:9px 0}
+.chkrow{display:flex;align-items:flex-start;gap:8px;padding:6px 9px;border:1px solid var(--line);
+  border-radius:8px;background:var(--panel);font-size:12.5px;width:100%;text-align:left}
+.chkrow .mark{width:18px;height:18px;border-radius:5px;display:grid;place-items:center;
+  font-size:11px;font-weight:700;flex:0 0 auto;background:var(--teacher-bg);color:var(--teacher);
+  border:1px solid var(--teacher-line)}
+.chkrow.no{background:var(--danger-bg);border-color:var(--danger-line)}
+.chkrow.no .mark{background:var(--danger);color:#fff;border-color:var(--danger)}
+.chkrow .ded{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--danger);flex:0 0 auto}
+.calc{font-family:var(--mono);font-size:11.5px;background:var(--panel-2);border:1px solid var(--line);
+  border-radius:8px;padding:8px 10px;margin-top:8px;line-height:1.75}
+.calc .op{color:var(--ink-3)}
+.calc .res{color:var(--teacher);font-weight:700}
+.nollm{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;color:var(--teacher);
+  background:var(--teacher-bg);border:1px solid var(--teacher-line);border-radius:999px;padding:1px 8px}
+.humanonly{border:1px dashed var(--line-2);border-radius:8px;padding:10px 11px;font-size:12.5px;
+  color:var(--ink-2);background:var(--panel-2);margin:9px 0}
+
+/* ชั้นคะแนนสุดท้าย */
+.ledger{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);
+  padding:10px 12px;margin-bottom:10px;font-size:12.5px}
+.ledger .lr{display:flex;align-items:baseline;gap:8px;padding:2px 0}
+.ledger .lr .v{margin-left:auto;font-weight:700}
+.ledger .sep{border-top:1px solid var(--line);margin:6px 0}
+.ledger .neg .v{color:var(--danger)}
+.ledger .tot .v{font-size:17px}
+.ledger .fl{font-size:11px;color:var(--warn);background:var(--warn-bg);border:1px solid var(--warn-line);
+  border-radius:6px;padding:4px 7px;margin-top:6px}
+
+/* คลังประโยค feedback */
+.fbank{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.fb{padding:4px 9px;border:1px solid var(--line-2);border-radius:999px;font-size:11.5px;
+  background:var(--panel);text-align:left;max-width:100%}
+.fb.on{background:var(--ai-bg);border-color:var(--ai-line);color:var(--ai)}
+.fb.pick{background:var(--teacher-bg);border-color:var(--teacher-line);color:var(--teacher)}
+
+.blindwrap{background:var(--blind)!important;color:var(--blind-ink)!important}
+.blindveil{border:1px dashed var(--ai);border-radius:var(--r);padding:12px;text-align:center;
+  font-size:12.5px;background:rgba(109,74,255,.10)}
+</style>
+
+<div class="protonote">PROTOTYPE · ข้อมูลสมมติทั้งหมด</div>
+<div id="root"></div>
+<div class="protobar">
+  <button id="pv" title="ก่อนหน้า (←)">‹</button>
+  <div class="lbl" id="plabel"></div>
+  <button id="nx" title="ถัดไป (→)">›</button>
+</div>
+
+<script>
+/* ============================================================
+   Nielsen's 10 Heuristics
+   ============================================================ */
+const NIELSEN = {
+  1:"การแสดงสถานะของระบบ", 2:"ความสอดคล้องกับโลกจริง", 3:"เสรีภาพในการควบคุมของผู้ใช้",
+  4:"ความสม่ำเสมอและมาตรฐาน", 5:"การป้องกันข้อผิดพลาด", 6:"การจดจำได้ดีกว่าการนึกเอง",
+  7:"ความยืดหยุ่นและประสิทธิภาพ", 8:"การออกแบบที่เรียบง่าย", 9:"ช่วยผู้ใช้แก้ไขข้อผิดพลาด",
+  10:"ความช่วยเหลือและเอกสาร",
+};
+
+const LEVELS  = [{n:1,t:"ต้องปรับปรุง"},{n:2,t:"พอใช้"},{n:3,t:"ดี"},{n:4,t:"ดีเยี่ยม"}];
+/* งานจริงหลายชิ้นในเอกสาร TA ใช้สเกล 0/1/2 ไม่ใช่ 1–4 — จำนวนระดับจึงเป็นของ rubric ไม่ใช่ของระบบ */
+const LEVELS3 = [{n:0,t:"ไม่มี / ไม่ชัด"},{n:1,t:"มีบางส่วน"},{n:2,t:"ครบถ้วน"}];
+
+/* ============================================================
+   ชิ้นงานที่ตรวจมีสองสายเท่านั้น: Figma กับ PDF
+   แต่ละประเภทมีเกณฑ์ ผลของ AI และ "หน่วยของหลักฐาน" ของตัวเอง
+   โครงสร้าง rubric เหมือนกันหมด (criterion × ระดับ) ต่างกันแค่จำนวนระดับ
+   ============================================================ */
+
+/* ---- Figma UI — งานตั้งต้นและแกนของระบบ (หลักฐาน = พิกัดบนเฟรม)
+   ทุกวันนี้ Figma เป็นส่วนน้อยของเทอมเพราะ "ตรวจด้วยมือแล้วลำบาก" ไม่ใช่เพราะไม่สำคัญ
+   ถ้าระบบตรวจสายนี้ได้ดี บทบาทของ Figma ในรายวิชาจะโตขึ้น ---- */
+const FIGMA = {
+  label:"Wireframe & Wireflow (10)", kind:"figma", file:"Figma · 2 เฟรม", full:10,
+  anchor:"พิกัด x,y บนเฟรม",
+  criteria:[
+    {id:"C1",dim:"หัวข้อ 1 · ระบบดีไซน์",t:"การใช้สีตามระบบที่กำหนด",d:"ใช้สีจาก token ที่กำหนด ไม่มีสีนอกระบบ"},
+    {id:"C2",dim:"หัวข้อ 1 · ระบบดีไซน์",t:"ความสม่ำเสมอของ typography",d:"ใช้ text style ไม่เกินชุดที่กำหนด"},
+    {id:"C3",dim:"หัวข้อ 1 · ระบบดีไซน์",t:"ระยะห่างและ spacing scale",d:"ระยะห่างเป็นพหุคูณของหน่วยฐาน 4pt"},
+    {id:"C4",dim:"หัวข้อ 2 · คุณภาพ UX",t:"ความชัดเจนของลำดับขั้นการใช้งาน",d:"ผู้ใช้รู้ว่าอยู่ขั้นไหน เหลืออีกกี่ขั้น ย้อนกลับอย่างไร"},
+    {id:"C5",dim:"หัวข้อ 2 · คุณภาพ UX",t:"การจัดการข้อผิดพลาดและสถานะว่าง",d:"ออกแบบสถานะผิดพลาดและสถานะว่างครบ"},
+    {id:"C6",dim:"หัวข้อ 2 · คุณภาพ UX",t:"ความสามารถในการเข้าถึง",d:"contrast ผ่าน WCAG AA และพื้นที่กดไม่เล็กกว่า 44pt"},
+    {id:"C7",k:"human",dim:"หัวข้อ 3 · ดุลพินิจ",t:"ความน่าสนใจของงานโดยรวม",d:"เกณฑ์ที่ไม่มี anchor และวัด agreement ไม่ได้ — ระบบล็อกไว้ให้อาจารย์ตัดสินเท่านั้น"},
+  ],
+  ai:{
+    C1:{lv:3,samples:[3,3,3],why:"ใช้สีจาก token หลักครบทุกหน้าจอ พบสีนอกระบบ 1 จุดที่ปุ่มรองในหน้าแรก (#8E8E93 ไม่อยู่ใน palette ที่ประกาศไว้) จึงยังไม่ถึงระดับ 4",
+      ev:[{f:2,x:52,y:74,w:60,h:9,l:"ปุ่มรอง หน้าแรก"}]},
+    C2:{lv:2,samples:[2,3,2],why:"พบ text style 9 แบบ ขณะที่ระบบกำหนดไว้ 5 แบบ ส่วนเกินมาจากการพิมพ์ขนาดเองในหน้าสมัครสมาชิก 3 จุด และหัวข้อการ์ดในหน้าแรกที่ใช้ขนาด 15 ซึ่งไม่มีในชุด",
+      ev:[{f:1,x:32,y:31,w:52,h:6,l:"ป้ายกำกับช่องกรอก"},{f:1,x:34,y:47,w:56,h:6,l:"ข้อความช่วยเหลือ"},{f:2,x:38,y:41,w:50,h:7,l:"หัวข้อการ์ด"}]},
+    C3:{lv:2,samples:[2,2,2],why:"ระยะห่างระหว่างช่องกรอกในหน้าสมัครสมาชิกไม่สม่ำเสมอ วัดได้ 12 / 16 / 14 / 16 pt ค่า 12 และ 14 ไม่เป็นพหุคูณของหน่วยฐาน 4 ที่ประกาศไว้",
+      ev:[{f:1,x:50,y:40,w:74,h:22,l:"ช่องกรอกชุดที่ 2–3"}]},
+    C4:{lv:3,samples:[3,4,3],why:"มีตัวบอกขั้นตอนที่หัวหน้าจอและปุ่มย้อนกลับชัดเจน แต่ไม่ได้ระบุว่าเหลืออีกกี่ขั้น ผู้ใช้จึงคาดการณ์ความยาวของกระบวนการไม่ได้",
+      ev:[{f:1,x:50,y:11,w:70,h:8,l:"แถบหัวข้อ / ตัวบอกขั้น"}]},
+    C5:{lv:1,samples:[1,2,1],why:"ไม่พบการออกแบบสถานะผิดพลาดของช่องกรอกเลย และหน้าแรกไม่มีสถานะว่างสำหรับกรณีที่ยังไม่มีข้อมูล มีเพียงกรอบสีแดงหนึ่งจุดที่ไม่มีข้อความอธิบายกำกับ",
+      ev:[{f:1,x:50,y:55,w:74,h:9,l:"ช่องกรอกสถานะผิดพลาด (ไม่มีข้อความ)"}]},
+    C6:{lv:2,samples:[2,2,3],why:"ตรวจด้วยชั้นคำนวณพบคู่สีที่ไม่ผ่าน WCAG AA จำนวน 7 คู่ ส่วนใหญ่เป็นข้อความรองบนพื้นสีอ่อน (อัตราส่วนต่ำสุด 2.9:1) และพบพื้นที่กดขนาด 32×32pt จำนวน 3 จุด",
+      rule:"contrast_fail=7 · min_ratio=2.9:1 · small_targets=3",
+      ev:[{f:2,x:50,y:86,w:80,h:11,l:"แถบเมนูล่าง — พื้นที่กด 32pt"},{f:1,x:50,y:64,w:70,h:7,l:"ข้อความช่วยเหลือ 2.9:1"}]},
+    C7:{human:true,full:1,samples:[],why:""},
+  },
+};
+
+/* ---- ประเภทที่ 2: Persona (หลักฐาน = ช่องในเทมเพลตบนหน้า PDF) ---- */
+const PERSONA = {
+  label:"Persona (5)", kind:"persona", file:"PDF · 3 หน้า (1 หน้า = 1 persona)", full:5,
+  anchor:"เลขหน้า + ชื่อช่องในเทมเพลต",
+  criteria:[
+    {id:"P1",dim:"หัวข้อ 1 · ความครบถ้วน",t:"องค์ประกอบครบตามเทมเพลต",d:"มีครบทุกช่อง: ข้อมูลพื้นฐาน · คำพูดตัวแทน · เป้าหมาย · ความคับข้องใจ · พฤติกรรม/ทักษะ"},
+    {id:"P2",dim:"หัวข้อ 2 · การอิงข้อมูลจริง",t:"อ้างอิงข้อมูลจากการสัมภาษณ์",d:"ทุกข้อความสำคัญสืบกลับไปยังบทสัมภาษณ์หรือแบบสอบถามที่แนบมาได้"},
+    {id:"P3",dim:"หัวข้อ 2 · การอิงข้อมูลจริง",t:"ความเฉพาะเจาะจง ไม่ใช่ persona กลวง",d:"เป้าหมายและความคับข้องใจเจาะจงพอที่จะใช้ตัดสินใจออกแบบได้จริง"},
+    {id:"P4",dim:"หัวข้อ 3 · ความสมเหตุสมผล",t:"ความสอดคล้องภายใน",d:"เป้าหมาย ความคับข้องใจ และพฤติกรรม ไม่ขัดแย้งกันเอง"},
+    {id:"P5",dim:"หัวข้อ 3 · ความสมเหตุสมผล",t:"ความแตกต่างระหว่าง persona",d:"persona แต่ละตัวต่างกันที่พฤติกรรมและเป้าหมาย ไม่ใช่ต่างแค่อายุกับอาชีพ"},
+  ],
+  ai:{
+    P1:{lv:4,samples:[4,4,4],why:"มีครบทั้ง 5 ช่องตามเทมเพลตที่แจกในคาบ ทั้งสามหน้า และแต่ละช่องมีเนื้อหาไม่ต่ำกว่า 2 ข้อ",
+      ev:[{fld:"goals",l:"ช่องเป้าหมาย หน้า 1"},{fld:"pains",l:"ช่องความคับข้องใจ หน้า 1"}]},
+    P2:{lv:2,samples:[2,1,2],why:"จาก 11 ข้อความในหน้านี้ มีเพียง 3 ข้อที่อ้างอิงกลับไปยังบทสัมภาษณ์ (ระบุรหัสผู้ให้สัมภาษณ์ R2, R5) ที่เหลือไม่มีที่มา และ 2 ข้อขัดกับสรุปผลสัมภาษณ์ที่แนบมาในภาคผนวก",
+      ev:[{fld:"pains",l:"ความคับข้องใจข้อ 2 — ไม่มีที่มา"},{fld:"behav",l:"พฤติกรรมข้อ 1 — ขัดกับ R5"}]},
+    P3:{lv:2,samples:[2,3,2],why:'เป้าหมายข้อ 1 เขียนว่า "อยากใช้แอปที่ใช้ง่าย" ซึ่งเป็นข้อความที่ใช้ได้กับผู้ใช้ทุกคนบนโลก จึงไม่ช่วยตัดสินใจออกแบบ ส่วนเป้าหมายข้อ 2 เจาะจงดี ("จองคิวให้ทันก่อนออกจากบ้าน 7 โมงเช้า")',
+      ev:[{fld:"goals",l:"เป้าหมายข้อ 1 — ข้อความกลวง"}]},
+    P4:{lv:3,samples:[3,3,3],why:'ส่วนใหญ่สอดคล้องกัน มีจุดสะดุดหนึ่งจุด: ระบุว่า "ไม่ถนัดเทคโนโลยี" แต่พฤติกรรมระบุว่าใช้แอปธนาคารและแอปสั่งอาหารเป็นประจำทุกวัน',
+      ev:[{fld:"skill",l:"แถบทักษะ — ไม่ถนัดเทคโนโลยี"},{fld:"behav",l:"พฤติกรรมประจำวัน"}]},
+    P5:{lv:1,samples:[1,1,2],why:"เทียบทั้งสามหน้าแล้ว เป้าหมายหลักของทั้งสาม persona เป็นข้อความเดียวกันเกือบคำต่อคำ ต่างกันเฉพาะอายุ อาชีพ และรูป ซึ่งไม่ใช่มิติที่ใช้ออกแบบต่างกันได้",
+      ev:[{fld:"goals",l:"เป้าหมายหน้า 1 เทียบหน้า 2–3"}]},
+  },
+};
+
+/* ---- ประเภทที่ 3: Heuristic Evaluation (หลักฐาน = แถวในตาราง finding) ---- */
+const FINDINGS = [
+  {n:1, prob:"หลังกดยืนยันการจอง ไม่มีอะไรบอกว่าระบบกำลังทำงาน ผู้ใช้กดซ้ำหลายครั้ง", stu:1, ai:1, sev:3, fix:"ใส่ spinner และปิดปุ่มระหว่างรอ"},
+  {n:2, prob:'ปุ่มยกเลิกใช้คำว่า "Discard" ในหน้าหนึ่ง แต่ใช้ "ล้างข้อมูล" ในอีกหน้า', stu:2, ai:4, sev:2, fix:"ใช้คำเดียวกันทั้งระบบ"},
+  {n:3, prob:"ไม่มีปุ่มย้อนกลับในขั้นตอนที่ 3 ของการจอง ต้องปิดแอปแล้วเริ่มใหม่", stu:3, ai:3, sev:3, fix:"เพิ่มปุ่มย้อนกลับทุกขั้น"},
+  {n:4, prob:"ผู้ใช้ต้องจำรหัสการจองจากหน้าก่อนหน้ามากรอกเอง", stu:4, ai:6, sev:2, fix:"เติมรหัสให้อัตโนมัติ"},
+  {n:5, prob:"ลบรายการจองได้ทันทีโดยไม่มีการถามยืนยัน", stu:5, ai:5, sev:3, fix:"เพิ่มหน้าต่างยืนยันและปุ่มเลิกทำ"},
+  {n:6, prob:'ข้อความผิดพลาดขึ้นว่า "Error 4012" โดยไม่บอกว่าต้องทำอะไรต่อ', stu:5, ai:9, sev:3, fix:"เขียนข้อความบอกวิธีแก้เป็นภาษาคน"},
+  {n:7, prob:"หน้าแรกมีปุ่ม 14 ปุ่มเรียงกันโดยไม่มีการจัดกลุ่ม", stu:8, ai:8, sev:2, fix:"จัดกลุ่มและซ่อนคำสั่งรอง"},
+  {n:8, prob:"สีของปุ่มหลักในหน้าชำระเงินไม่เหมือนหน้าอื่น", stu:4, ai:4, sev:1, fix:"ใช้ component เดียวกัน"},
+  {n:9, prob:"ผู้ใช้ที่ชำนาญไม่มีทางลัดในการจองซ้ำรายการเดิม", stu:7, ai:7, sev:1, fix:'เพิ่มปุ่ม "จองซ้ำ" ในประวัติ'},
+];
+const HEURISTIC = {
+  label:"Nielsen's 10 Heuristics (5)", kind:"heuristic", file:"PDF · ตาราง 9 รายการ", full:5,
+  anchor:"เลขรายการในตาราง",
+  criteria:[
+    {id:"H1",dim:"หัวข้อ 1 · ความถูกต้อง",t:"การจับคู่ปัญหากับ heuristic ถูกข้อ",d:"ปัญหาที่พบถูกจัดเข้า heuristic ที่ตรงกับลักษณะของปัญหานั้นจริง"},
+    {id:"H2",dim:"หัวข้อ 1 · ความถูกต้อง",t:"ความรุนแรงสมเหตุสมผล",d:"ระดับความรุนแรงสอดคล้องกับความถี่ ผลกระทบ และความยากในการหลีกเลี่ยง"},
+    {id:"H3",dim:"หัวข้อ 2 · ความครอบคลุม",t:"ครอบคลุม heuristic หลายข้อ",d:"ไม่กระจุกอยู่เพียง 2–3 ข้อ และไม่ข้ามข้อที่ระบบนี้มีปัญหาชัดเจน"},
+    {id:"H4",dim:"หัวข้อ 3 · คุณภาพของการเขียน",t:"ข้อเสนอแนะแก้ไขทำได้จริง",d:"ข้อเสนอเจาะจงพอที่นักออกแบบจะลงมือทำได้ ไม่ใช่ 'ควรปรับปรุง UI'"},
+    {id:"H5",dim:"หัวข้อ 3 · คุณภาพของการเขียน",t:"มีหลักฐานกำกับทุกรายการ",d:"ทุกรายการมีภาพหน้าจอหรือระบุตำแหน่งที่พบชัดเจน"},
+  ],
+  ai:{
+    H1:{lv:2,samples:[2,2,3],why:"จาก 9 รายการ พบการจัดเข้า heuristic ผิดข้อ 3 รายการ รูปแบบความผิดพลาดชัดเจน: นักศึกษาใช้ข้อ 5 (การป้องกันข้อผิดพลาด) กับปัญหาที่เกิด**หลัง**เกิดข้อผิดพลาดแล้ว ซึ่งควรเป็นข้อ 9 และใช้ข้อ 2 (โลกจริง) กับปัญหาเรื่องคำศัพท์ไม่ตรงกันภายในระบบเอง ซึ่งเป็นข้อ 4",
+      ev:[{row:2,l:"รายการ 2 — ระบุข้อ 2 ควรเป็นข้อ 4"},{row:4,l:"รายการ 4 — ระบุข้อ 4 ควรเป็นข้อ 6"},{row:6,l:"รายการ 6 — ระบุข้อ 5 ควรเป็นข้อ 9"}]},
+    H2:{lv:3,samples:[3,3,3],why:"ระดับความรุนแรงส่วนใหญ่สมเหตุสมผล รายการ 8 (สีปุ่มไม่ตรงกัน) ให้ระดับ 1 เหมาะสม แต่รายการ 5 (ลบได้โดยไม่ถามยืนยัน) ควรเป็นระดับสูงสุดเพราะกู้คืนไม่ได้ ไม่ใช่ระดับ 3",
+      ev:[{row:5,l:"รายการ 5 — ความรุนแรงต่ำเกินไป"}]},
+    H3:{lv:3,samples:[3,4,3],why:"ครอบคลุม 7 จาก 10 ข้อ กระจายดี ข้อที่ไม่ได้แตะคือข้อ 3, 7, 10 — ในจำนวนนี้ข้อ 10 (ความช่วยเหลือและเอกสาร) ระบบที่ประเมินไม่มีส่วนช่วยเหลือเลย จึงเป็นช่องว่างที่ควรถูกรายงาน",
+      ev:[{row:3,l:"รายการ 3 อยู่ในข้อ 3 แล้ว"}]},
+    H4:{lv:2,samples:[2,2,2],why:'ข้อเสนอ 4 จาก 9 รายการเจาะจงพอจะลงมือทำได้ ที่เหลือกว้างเกินไป เช่นรายการ 7 เขียนว่า "จัดกลุ่มและซ่อนคำสั่งรอง" โดยไม่ระบุว่าคำสั่งไหนคือคำสั่งรอง',
+      ev:[{row:7,l:"รายการ 7 — ข้อเสนอกว้างเกินไป"}]},
+    H5:{lv:1,samples:[1,1,1],why:"ไม่มีรายการใดแนบภาพหน้าจอเลยทั้ง 9 รายการ และมี 4 รายการที่ไม่ระบุด้วยซ้ำว่าพบที่หน้าจอไหน ทำให้ตรวจสอบซ้ำไม่ได้",
+      ev:[{row:1,l:"รายการ 1 — ไม่ระบุหน้าจอ"},{row:6,l:"รายการ 6 — ไม่ระบุหน้าจอ"}]},
+  },
+};
+
+/* ---- ประเภทที่ 4: Empathy Map (หลักฐาน = ช่อง + โน้ตในช่อง) ---- */
+const QUADS = [
+  {k:"says", t:"พูดว่า (Says)", notes:[
+    {t:'"ผมจองคิวออนไลน์ทุกครั้ง สะดวกกว่าโทร"'},
+    {t:'"ไม่รู้ว่ากดไปแล้วมันติดหรือยัง"'},
+    {t:'น่าจะกลัวว่าจะเสียคิว', miss:true}]},
+  {k:"thinks", t:"คิดว่า (Thinks)", notes:[
+    {t:"กลัวว่าจองไปแล้วจะไม่ได้จริง"},
+    {t:"ขี้เกียจกรอกข้อมูลซ้ำทุกครั้ง"}]},
+  {k:"does", t:"ทำ (Does)", notes:[
+    {t:"เปิดแอปเช็กคิวซ้ำ 3–4 ครั้งก่อนออกจากบ้าน"},
+    {t:"ถ่ายภาพหน้าจอยืนยันเก็บไว้"}]},
+  {k:"feels", t:"รู้สึก (Feels)", notes:[
+    {t:"ไม่มั่นใจ"},
+    {t:"รำคาญเวลาต้องกรอกใหม่"}]},
+];
+const EMPATHY = {
+  label:"Empathy (5)", kind:"empathy", file:"PDF · 1 หน้า", full:5,
+  anchor:"ชื่อช่อง + ลำดับโน้ตในช่อง",
+  criteria:[
+    {id:"E1",dim:"หัวข้อ 1 · ความถูกต้อง",t:"จัดข้อมูลลงถูกช่อง",d:"สิ่งที่ผู้ใช้พูดจริงอยู่ในช่อง Says เท่านั้น การตีความอยู่ในช่อง Thinks"},
+    {id:"E2",dim:"หัวข้อ 2 · การอิงข้อมูลจริง",t:"อ้างคำพูดจริงจากการสัมภาษณ์",d:"ช่อง Says ควรเป็นคำพูดตรงในเครื่องหมายคำพูด ไม่ใช่การสรุปความ"},
+    {id:"E3",dim:"หัวข้อ 3 · ความลึก",t:"ไม่เป็นข้อความทั่วไป",d:"เนื้อหาเจาะจงกับบริบทของผู้ใช้รายนี้ ไม่ใช่ข้อความที่ใช้กับใครก็ได้"},
+    {id:"E4",dim:"หัวข้อ 3 · ความลึก",t:"เชื่อมโยงกับ persona ที่ส่งมา",d:"ข้อมูลใน empathy map สอดคล้องกับ persona ที่ทำในงานถัดไป"},
+  ],
+  ai:{
+    E1:{lv:2,samples:[2,2,3],why:'พบข้อผิดพลาดคลาสสิกในช่อง Says: ข้อความที่ 3 เขียนว่า "น่าจะกลัวว่าจะเสียคิว" ซึ่งไม่ใช่คำพูดของผู้ใช้ แต่เป็นการตีความของผู้ทำ จึงต้องอยู่ในช่อง Thinks ส่วนอีกสามช่องจัดถูกทั้งหมด',
+      ev:[{q:"says",note:2,l:"Says ข้อ 3 — เป็นการตีความ ควรอยู่ Thinks"}]},
+    E2:{lv:3,samples:[3,3,3],why:"สองในสามข้อความของช่อง Says อยู่ในเครื่องหมายคำพูดและอ่านเหมือนคำพูดจริง ข้อที่สามเป็นการสรุปความ",
+      ev:[{q:"says",note:0,l:"Says ข้อ 1 — คำพูดตรง"}]},
+    E3:{lv:3,samples:[3,4,3],why:'ช่อง Does เจาะจงดีมาก ("เปิดแอปเช็กคิวซ้ำ 3–4 ครั้งก่อนออกจากบ้าน") ระบุความถี่และบริบทเวลา ส่วนช่อง Feels ยังกว้าง ("ไม่มั่นใจ") ไม่บอกว่าไม่มั่นใจเรื่องอะไรในขั้นตอนไหน',
+      ev:[{q:"does",note:0,l:"Does ข้อ 1 — เจาะจงดี"},{q:"feels",note:0,l:"Feels ข้อ 1 — กว้างเกินไป"}]},
+    E4:{lv:2,samples:[2,2,2],why:"ความคับข้องใจเรื่องการกรอกข้อมูลซ้ำปรากฏทั้งใน empathy map และ persona ตรงกันดี แต่ persona ระบุว่าไม่ถนัดเทคโนโลยี ขณะที่ empathy map แสดงพฤติกรรมของผู้ใช้ที่คล่องแอปมาก",
+      ev:[{q:"does",note:1,l:"Does ข้อ 2 — ขัดกับ persona"}]},
+  },
+};
+
+/* ---- ประเภทที่ 5: Customer Journey Mapping (หลักฐาน = แถว × คอลัมน์ของบอร์ด) ----
+   สเกล 0/1/2 ตามเอกสาร TA จริง — ไม่ใช่ 1–4 · มีคลังประโยค feedback ที่อาจารย์เขียนไว้แล้ว */
+const JSTAGES = ["รู้จักบริการ","ค้นหาคิว","จองคิว","รอถึงคิว","หลังใช้บริการ"];
+const JLANES = [
+  {k:"act", t:"สิ่งที่ผู้ใช้ทำ", c:["เห็นโปสเตอร์ที่คลินิก","เปิดแอปดูคิวว่าง","เลือกเวลาแล้วกดยืนยัน","เช็กหน้าจอซ้ำหลายรอบ",""]},
+  {k:"tp",  t:"จุดสัมผัส", c:["โปสเตอร์ · LINE OA","หน้าค้นหาในแอป","หน้ายืนยันการจอง","หน้าประวัติการจอง",""]},
+  {k:"thk", t:"คิด / รู้สึก", c:["\"ลองดูก็ได้\"","\"คิวเช้าเต็มเร็วมาก\"","\"กดแล้วติดหรือยัง\"","\"ไม่กล้าออกจากบ้าน\"",""]},
+  {k:"emo", t:"เส้นอารมณ์", c:["🙂","😐","😟","😣",""], emo:true},
+  {k:"pain",t:"ปัญหา / โอกาส", c:["","ไม่เห็นคิวของวันถัดไป","ไม่มีการยืนยันกลับ","ไม่มีการแจ้งเตือนก่อนถึงคิว",""]},
+];
+const JOURNEY = {
+  label:"Customer Journey Mapping (6)", kind:"journey", file:"บอร์ด Miro export · PNG 1 ภาพ", full:6,
+  anchor:"ชื่อแถว (lane) + ลำดับขั้นตอน", levels:LEVELS3,
+  fbank:["ช่วยเพิ่มขั้นตอนหลังใช้บริการด้วย จะเห็นภาพครบวงจรขึ้น",
+         "เส้นอารมณ์ควรอิงจากสิ่งที่ผู้ใช้พูดจริง ไม่ใช่เดาเอง",
+         "จุดสัมผัสยังกว้าง ลองระบุว่าเป็นหน้าจอไหนหรือช่องทางใด",
+         "ปัญหาที่พบดีแล้ว ลองเขียนต่อว่าจะแก้อย่างไรได้บ้าง",
+         "แถวปัญหากับเส้นอารมณ์ยังไม่สอดคล้องกัน ลองทบทวนอีกครั้ง"],
+  aiFb:[0,4],
+  criteria:[
+    {id:"J1",dim:"เกณฑ์ 1",t:"ครอบคลุมตั้งแต่ก่อนใช้ถึงหลังใช้บริการ",d:"2 = ครบทั้ง 3 ช่วง (ก่อน / ระหว่าง / หลัง) · 1 = ขาด 1 ช่วง · 0 = มีแค่ช่วงระหว่างใช้"},
+    {id:"J2",dim:"เกณฑ์ 2",t:"ระบุจุดสัมผัสและอารมณ์ในแต่ละขั้น",d:"2 = ครบทุกขั้นและอิงข้อมูลจริง · 1 = มีแต่ไม่ครบ หรือเดาเอง · 0 = ไม่มี"},
+    {id:"J3",dim:"เกณฑ์ 3",t:"ระบุปัญหาหรือโอกาสที่ต่อยอดได้",d:"2 = ปัญหาชัดและต่อยอดเป็นไอเดียได้ · 1 = ระบุปัญหาแต่กว้าง · 0 = ไม่มี"},
+  ],
+  ai:{
+    J1:{lv:1,samples:[1,1,2],why:"มีครบ 4 ขั้นตอนแรกตั้งแต่รู้จักบริการจนถึงรอถึงคิว แต่คอลัมน์ที่ 5 (หลังใช้บริการ) ว่างทั้งแถว ทำให้ขาดช่วง \"หลัง\" ซึ่งเป็นช่วงที่เกณฑ์ระบุไว้ชัด",
+      ev:[{lane:"act",st:4,l:"คอลัมน์ หลังใช้บริการ — ว่างทั้งแถว"}]},
+    J2:{lv:2,samples:[2,2,2],why:"จุดสัมผัสระบุเจาะจงถึงระดับหน้าจอ (\"หน้ายืนยันการจอง\") ไม่ใช่แค่ \"แอป\" และเส้นอารมณ์เคลื่อนสอดคล้องกับข้อความในแถวคิด/รู้สึก ซึ่งอ้างคำพูดจากการสัมภาษณ์",
+      ev:[{lane:"tp",st:2,l:"จุดสัมผัสขั้นที่ 3 — เจาะจงถึงหน้าจอ"},{lane:"emo",st:3,l:"เส้นอารมณ์ขั้นที่ 4"}]},
+    J3:{lv:1,samples:[1,2,1],why:"ระบุปัญหาไว้ 3 จุดและตรงกับจุดที่เส้นอารมณ์ตก แต่เขียนเป็นการบรรยายอาการ ไม่ได้เขียนต่อว่าจะเป็นโอกาสออกแบบอะไร จึงยังต่อยอดเป็นไอเดียไม่ได้ทันที",
+      ev:[{lane:"pain",st:3,l:"ปัญหาขั้นที่ 4 — ไม่มีข้อเสนอต่อยอด"}]},
+  },
+};
+
+
+/* Figma มาก่อนเสมอ — เป็นทั้งงานตั้งต้นและเคสที่ยากที่สุด
+   ที่เหลือคือสาย PDF ซึ่งต่างกันที่ "หน่วยของหลักฐาน" ไม่ใช่ที่โครงสร้าง rubric */
+const WORKS = {figma:FIGMA, persona:PERSONA, heuristic:HEURISTIC, empathy:EMPATHY,
+  journey:JOURNEY};
+
+/* r = สัดส่วนคะแนนดิบที่ได้จาก rubric · late = จำนวนวันที่ส่งช้า (สมมติ) */
+const GROUPS = [
+  {id:"G01",n:"กลุ่ม 01",m:3,st:"ai",flags:[],r:.9,late:0},
+  {id:"G02",n:"กลุ่ม 02",m:3,st:"ai",flags:["blind"],r:.8,late:0},
+  {id:"G03",n:"กลุ่ม 03",m:2,st:"done",flags:[],r:.7,late:0},
+  {id:"G04",n:"กลุ่ม 04",m:3,st:"ai",flags:["boundary","late"],r:.9,late:1},
+  {id:"G05",n:"กลุ่ม 05",m:3,st:"fail",flags:["failed"],r:.5,late:0},
+  {id:"G06",n:"กลุ่ม 06",m:3,st:"ai",flags:[],r:.85,late:0},
+  {id:"G07",n:"กลุ่ม 07",m:2,st:"done",flags:[],r:.75,late:0},
+  {id:"G08",n:"กลุ่ม 08",m:3,st:"ai",flags:["extreme-low","late"],r:.2,late:3},
+  {id:"G09",n:"กลุ่ม 09",m:3,st:"ai",flags:["blind"],r:.8,late:0},
+  {id:"G10",n:"กลุ่ม 10",m:3,st:"ai",flags:[],r:.9,late:0},
+  {id:"G11",n:"กลุ่ม 11",m:2,st:"toolate",flags:["too-late"],r:.85,late:5},
+  {id:"G12",n:"กลุ่ม 12",m:3,st:"ai",flags:["outlier"],r:.6,late:0},
+  {id:"G13",n:"กลุ่ม 13",m:3,st:"ai",flags:["blind"],r:.85,late:0},
+  {id:"G14",n:"กลุ่ม 14",m:3,st:"pending",flags:[],r:0,late:0},
+];
+const FLAGTXT = {blind:"อยู่ในชุด blind", boundary:"คะแนนใกล้เส้นเกรด ±5%", failed:"AI ตรวจไม่สำเร็จ",
+  "extreme-low":"คะแนนต่ำสุด 3 อันดับ", "extreme-high":"คะแนนสูงสุด 3 อันดับ",
+  outlier:"ต่างจากประวัติกลุ่มนี้เกิน 2 SD", late:"ส่งช้า", "too-late":"ส่งช้าเกิน 3 วัน"};
+
+const S = {variant:"A", work:"figma", group:"G01", blind:false, focusCrit:null,
+  activeEv:null, mine:{}, bIndex:0, bCrit:null, drawer:null, fb:{}, chk:{}, cnt:{}};
+
+const W = ()=>WORKS[S.work];
+const esc = s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ============================================================
+   ตัวเรนเดอร์ชิ้นงาน — dispatch ตามประเภท
+   นี่คือแก่นของ ticket: หลักฐานของแต่ละประเภทเป็นคนละหน่วยกัน
+   ============================================================ */
+function evsOf(cid){
+  const a = W().ai[cid];
+  if(!a) return [];
+  if(a.items) return a.items.map(x=>x.ev);
+  return a.ev || [];
+}
+function anyActiveEv(){
+  if(!S.activeEv) return null;
+  const [c,i] = S.activeEv.split("|");
+  return evsOf(c)[+i] || null;
+}
+
+function renderWork(){
+  const w = W(), a = anyActiveEv();
+  const head = `<div class="canvashead">
+    <span class="pill mute">${esc(w.file)}</span>
+    <span class="dim">หน่วยของหลักฐาน: ${esc(w.anchor)}</span>
+    <div class="spacer"></div>
+    <span class="dim">ไฟล์ถูกแช่แข็งตอนกดส่ง</span>
+    <button class="btn sm">เปิดไฟล์ต้นฉบับ</button>
+  </div>`;
+  return `<div class="canvas">${head}${
+    w.kind==="figma"     ? wFigma(a) :
+    w.kind==="persona"   ? wPersona(a) :
+    w.kind==="heuristic" ? wHeuristic(a) :
+    w.kind==="journey"   ? wJourney(a) : wEmpathy(a)}</div>`;
+}
+
+/* --- Journey: ไฮไลต์ช่องที่ตัดกันระหว่างแถว (lane) กับขั้นตอน (stage) --- */
+function wJourney(a){
+  return `<div class="jwrap"><div class="jgrid">
+    <div class="jc hd"></div>${JSTAGES.map(s=>`<div class="jc hd">${esc(s)}</div>`).join("")}
+    ${JLANES.map(L=>`<div class="jc lane">${esc(L.t)}</div>`+
+      L.c.map((v,i)=>`<div class="jc ${v?"":"empty"} ${a&&a.lane===L.k&&a.st===i?"on":""} ${L.emo?"emo":""}">${esc(v)}</div>`).join("")
+    ).join("")}
+  </div></div>
+  <div class="dim" style="margin-top:9px">หลักฐานชี้ที่ "แถว × ขั้นตอน" — ไม่ต้องใช้พิกัด ขอแค่ AI อ่านโครงตารางของบอร์ดออก</div>`;
+}
+
+/* --- Figma: หมุดพิกัด — เคสหลักของระบบ และเคสที่ชั้นอ่านไฟล์ยากที่สุด --- */
+function wFigma(a){
+  /* เกณฑ์ human_only ไม่มีหลักฐานจาก AI เลย — ต้องคืนอาร์เรย์ว่าง ไม่ใช่ undefined */
+  const evs = (S.focusCrit && W().ai[S.focusCrit] ? W().ai[S.focusCrit].ev : []) || [];
+  const pins = fi => evs.map((e,i)=> e.f===fi ? `
+    <div class="pinbox ${a===e?"on":""}" style="left:${e.x-e.w/2}%;top:${e.y-e.h/2}%;width:${e.w}%;height:${e.h}%"></div>
+    <div class="pin ${a===e?"on":""}" data-ev="${S.focusCrit}|${i}" style="left:${e.x}%;top:${e.y}%" title="${esc(e.l)}">${i+1}</div>`:"").join("");
+  return `<div class="frames">
+    <div class="frame"><div class="cap">01_signup.png</div><div class="screen">
+      <div class="st"></div><div class="hd">สมัครสมาชิก · ขั้นที่ 2</div>
+      <div class="bd"><div class="bar t"></div><div class="bar s"></div><div class="inp"></div><div class="inp"></div>
+        <div class="inp bad"></div><div class="bar s" style="width:55%"></div><div class="cta"></div>
+        <div class="bar s" style="width:45%;margin:0 auto"></div></div>${pins(1)}</div></div>
+    <div class="frame"><div class="cap">02_home.png</div><div class="screen">
+      <div class="st"></div><div class="hd">หน้าแรก</div>
+      <div class="bd"><div class="bar t" style="width:48%"></div>
+        <div class="row2"><div class="cta pale" style="height:24px"></div><div class="cta pale" style="height:24px"></div></div>
+        <div class="mcard"><div class="bar" style="height:34px"></div><div class="bar s"></div><div class="bar s" style="width:52%"></div></div>
+        <div class="mcard"><div class="bar" style="height:34px"></div><div class="bar s"></div><div class="bar s" style="width:52%"></div></div></div>
+      <div class="tabbar"><i></i><i></i><i></i><i></i></div>${pins(2)}</div></div>
+  </div>
+  <div class="dim" style="text-align:center;margin-top:9px">หมุดแสดงเฉพาะหลักฐานของเกณฑ์ที่กำลังเปิด${S.focusCrit?" ("+S.focusCrit+")":" — ยังไม่ได้เปิดเกณฑ์ใด"}</div>`;
+}
+
+/* --- Persona: ไฮไลต์ช่องในเทมเพลตบนหน้า PDF --- */
+function wPersona(a){
+  const on = f => a && a.fld===f ? "on" : "";
+  return `<div class="pdfmeta">persona_wichai.pdf · หน้า 1 จาก 3</div>
+  <div class="paper pdfpage">
+    <div class="phead">
+      <div class="photo">◔</div>
+      <div style="flex:1">
+        <div class="fld ${on("basic")}"><span class="fnum">!</span>
+          <h3 style="font-size:19px">วิชัย · 34 ปี</h3>
+          <div style="color:#77776e;font-size:12px">พนักงานขนส่ง · กรุงเทพฯ · ใช้ Android</div>
+        </div>
+        <div class="fld ${on("skill")}" style="margin-top:8px"><span class="fnum">!</span>
+          <div style="font-size:11px;color:#8d8d84;letter-spacing:.05em">ความถนัดเทคโนโลยี</div>
+          <div class="pbar"><i style="width:28%"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="fld ${on("quote")}"><span class="fnum">!</span>
+      <div class="pquote">"ผมแค่อยากรู้ว่าจองติดหรือยัง ไม่ต้องสวยก็ได้"</div></div>
+    <div class="pcols">
+      <div class="fld ${on("goals")}"><span class="fnum">!</span><div class="pbox">
+        <h5>เป้าหมาย</h5><ul>
+        <li>อยากใช้แอปที่ใช้ง่าย</li>
+        <li>จองคิวให้ทันก่อนออกจากบ้าน 7 โมงเช้า</li></ul></div></div>
+      <div class="fld ${on("pains")}"><span class="fnum">!</span><div class="pbox">
+        <h5>ความคับข้องใจ</h5><ul>
+        <li>ต้องกรอกข้อมูลเดิมซ้ำทุกครั้ง <span style="color:#a4322a">(R2)</span></li>
+        <li>ไม่รู้ว่ากดยืนยันไปแล้วสำเร็จหรือไม่</li></ul></div></div>
+      <div class="fld ${on("behav")}" style="grid-column:1/-1"><span class="fnum">!</span><div class="pbox">
+        <h5>พฤติกรรม</h5><ul>
+        <li>ใช้แอปธนาคารและแอปสั่งอาหารเป็นประจำทุกวัน</li>
+        <li>เช็กหน้าจอยืนยันซ้ำหลายครั้ง <span style="color:#a4322a">(R5)</span></li></ul></div></div>
+    </div>
+  </div>
+  <div class="dim" style="text-align:center;margin-top:9px">หลักฐานชี้ที่ "ช่องในเทมเพลต" ไม่ใช่พิกัด — ทำงานได้แม้นักศึกษาจัดหน้าไม่เหมือนกัน</div>`;
+}
+
+/* --- Heuristic: ไฮไลต์แถว + แสดงข้อที่ AI ว่าควรเป็น --- */
+function wHeuristic(a){
+  const covered = new Set(FINDINGS.map(f=>f.stu));
+  return `<div class="paper" style="padding:4px 6px 10px">
+    <table class="htable"><thead><tr>
+      <th style="width:26px">#</th><th>ปัญหาที่พบ</th><th style="width:210px">Heuristic ที่ระบุ</th>
+      <th style="width:58px">ระดับ</th><th style="width:180px">ข้อเสนอแนะ</th>
+    </tr></thead><tbody>
+    ${FINDINGS.map(f=>{
+      const wrong = f.stu!==f.ai;
+      return `<tr class="${a&&a.row===f.n?"on":""}">
+        <td style="font-family:var(--mono);color:#8d8d84">${f.n}</td>
+        <td>${esc(f.prob)}</td>
+        <td><span class="hchip ${wrong?"bad":"ok"}">${f.stu}. ${esc(NIELSEN[f.stu])}</span>
+          ${wrong&&!S.blind?`<div style="margin-top:3px;font-size:11px"><span class="arrow">↳ AI ว่าเป็น</span>
+            <span class="hchip">${f.ai}. ${esc(NIELSEN[f.ai])}</span></div>`:""}</td>
+        <td><span class="sev s${f.sev}">${["น้อย","ปานกลาง","สูง"][f.sev-1]}</span></td>
+        <td style="color:#66665e">${esc(f.fix)}</td></tr>`;
+    }).join("")}
+    </tbody></table></div>
+  <div class="cover"><b>ความครอบคลุมทั้ง 10 ข้อของ Nielsen — ช่องแดงคือข้อที่ไม่ได้รายงานเลย</b>
+    ${Object.keys(NIELSEN).map(k=>`<span class="hn ${covered.has(+k)?"has":"gap"}" title="${esc(NIELSEN[k])}">${k}</span>`).join("")}
+  </div>
+  <div class="dim" style="margin-top:9px">หลักฐานชี้ที่ "เลขรายการ" — เป็นประเภทงานที่ AI ชี้หลักฐานได้แม่นที่สุด เพราะทั้งชิ้นเป็นโครงสร้างอยู่แล้ว</div>`;
+}
+
+/* --- Empathy: ไฮไลต์ช่อง + โน้ต --- */
+function wEmpathy(a){
+  return `<div class="emap">${QUADS.map(q=>`
+    <div class="equad ${a&&a.q===q.k?"on":""}">
+      <h5>${esc(q.t)}</h5>
+      <div class="notes">${q.notes.map((nt,i)=>`
+        <div class="stick ${a&&a.q===q.k&&a.note===i?"on":""} ${nt.miss?"miss":""}">${esc(nt.t)}</div>`).join("")}</div>
+    </div>`).join("")}</div>
+  <div class="dim" style="text-align:center;margin-top:9px">หลักฐานชี้ที่ "ช่อง + ลำดับโน้ต" — โน้ตสีชมพูคือที่ AI ว่าอยู่ผิดช่อง</div>`;
+}
+
+/* ============================================================ */
+function confHtml(samples){
+  const agree = new Set(samples).size===1;
+  return `<span class="conf" title="รันซ้ำ 3 ครั้งที่ temperature 0.4 — ได้ระดับ ${samples.join(", ")}">
+    <span class="dots">${samples.map(()=>`<i class="${agree?"on":"split"}"></i>`).join("")}</span>
+    ${agree?"รันซ้ำ 3 ครั้งได้ผลตรงกัน":`รันซ้ำ 3 ครั้งได้ ${samples.join("/")} — <b>ไม่นิ่ง</b>`}</span>`;
+}
+
+function evChips(cid){
+  return evsOf(cid).map((e,i)=>
+    `<button class="ev${S.activeEv===cid+"|"+i?" on":""}" data-ev="${cid}|${i}">◎ ${esc(e.l)}</button>`).join("");
+}
+
+/* ---- เกณฑ์สองแบบที่ "คำนวณ" ไม่ใช่ "ตัดสิน" — LLM ไม่ได้แตะเลขพวกนี้เลย ---- */
+const okOf  = (cid,i)=> S.chk[cid+"|"+i]!==undefined ? S.chk[cid+"|"+i] : W().ai[cid].items[i].ok;
+const cntOf = cid => S.cnt[cid]!==undefined ? S.cnt[cid] : W().ai[cid].counted;
+function calcScore(cid){
+  const a = W().ai[cid];
+  if(a.items){ const miss = a.items.filter((_,i)=>!okOf(cid,i)).length;
+    return Math.max(0, a.full - miss*a.ded); }
+  if(a.formula) return cntOf(cid) >= a.min ? a.full : Math.max(0, a.full - a.ded);
+  return null;
+}
+
+function levelRow(cid, aiLv){
+  const mine = S.mine[cid];
+  return `<div class="levels">`+(W().levels||LEVELS).map(L=>{
+    const isAi=!S.blind&&L.n===aiLv, isMine=mine===L.n;
+    return `<button class="lv${isAi?" aipick":""}${isMine?" mine":""}" data-lv="${L.n}" data-crit="${cid}">
+      ${isMine?'<span class="tag">คะแนนของคุณ</span>':isAi?'<span class="tag">AI เสนอ</span>':""}
+      <b>${L.n}</b>${L.t}</button>`;
+  }).join("")+`</div>`;
+}
+
+function critBlock(c, forceOpen){
+  const a = W().ai[c.id], mine = S.mine[c.id];
+  const open = forceOpen || S.focusCrit===c.id;
+  const kind = c.k || "level";
+
+  /* --- ป้ายคะแนนบนหัวเกณฑ์ ต่างกันตามรูปแบบของ rubric --- */
+  let pill, changed = false, edited = mine!==undefined;
+  if(kind==="human"){
+    pill = mine!==undefined ? `<span class="pill teacher">คุณให้ ${mine}/${a.full}</span>`
+                            : `<span class="pill mute">ระบบไม่ให้คะแนนข้อนี้</span>`;
+  }else if(kind==="check"||kind==="count"){
+    const sc = calcScore(c.id);
+    const touched = Object.keys(S.chk).some(k=>k.startsWith(c.id+"|")) || S.cnt[c.id]!==undefined;
+    edited = touched;
+    pill = `<span class="pill ${touched?"teacher":"ai"}">${touched?"หลังคุณแก้ ":"ระบบคำนวณ "}${sc}/${a.full}</span>`;
+  }else{
+    changed = mine!==undefined && mine!==a.lv;
+    pill = S.blind&&mine===undefined ? '<span class="pill mute">ซ่อนคะแนน AI</span>'
+      : `<span class="pill ${mine!==undefined?"teacher":"ai"}">${mine!==undefined?"คุณให้ "+mine:"AI ให้ "+a.lv}</span>`;
+  }
+
+  /* --- เนื้อในของเกณฑ์ --- */
+  let body;
+  if(kind==="human"){
+    body = `<div class="humanonly">
+      <b style="color:var(--ink)">เกณฑ์นี้ล็อกไว้ให้คนตัดสินเท่านั้น</b><br>
+      AI ไม่ให้คะแนนและไม่เสนอความเห็น เพราะเกณฑ์นี้ไม่มีคำบรรยายระดับที่วัดได้
+      จึงวัดความเห็นตรงกันไม่ได้ และไม่ควรนับรวมในการประเมินความแม่นของระบบ
+      <div class="levels" style="margin-top:9px">
+        ${[0,1].map(n=>`<button class="lv${mine===n?" mine":""}" data-lv="${n}" data-crit="${c.id}">
+          ${mine===n?'<span class="tag">คะแนนของคุณ</span>':""}<b>${n}</b>${n?"ให้":"ไม่ให้"}</button>`).join("")}
+      </div></div>`;
+  }else if(kind==="check"){
+    const miss = a.items.filter((_,i)=>!okOf(c.id,i)).length;
+    body = `<div class="chk">${a.items.map((it,i)=>{
+      const ok = okOf(c.id,i);
+      return `<button class="chkrow ${ok?"yes":"no"}" data-chk="${c.id}|${i}">
+        <span class="mark">${ok?"✓":"✕"}</span><span>${esc(it.t)}</span>
+        ${ok?"":`<span class="ded">−${a.ded}</span>`}</button>`;}).join("")}</div>
+      <div class="calc"><span class="nollm">✓ ไม่ผ่าน LLM</span><br>
+        คะแนนเต็ม <b>${a.full}</b> <span class="op">−</span> ขาด <b>${miss}</b> จุด <span class="op">×</span> จุดละ <b>${a.ded}</b>
+        <span class="op">=</span> <span class="res">${calcScore(c.id)}</span></div>
+      <div class="dim" style="margin-top:6px">แก้ที่รายการ ไม่ใช่แก้ที่ตัวเลข — กดสลับ ✓/✕ แล้วคะแนนขยับเอง</div>`;
+  }else if(kind==="count"){
+    const n = cntOf(c.id), pass = n>=a.min;
+    body = `<div class="calc"><span class="nollm">✓ ไม่ผ่าน LLM</span><br>
+        AI นับได้ <b>${n}</b> ใบ
+        <button class="btn sm" data-cnt="${c.id}|-1" style="padding:0 7px">−</button>
+        <button class="btn sm" data-cnt="${c.id}|1" style="padding:0 7px">+</button>
+        ${S.cnt[c.id]!==undefined?`<span style="color:var(--teacher)">(คุณปรับจาก ${a.counted})</span>`:""}<br>
+        สมาชิก <b>${W().members}</b> คน <span class="op">→</span> สูตรขั้นต่ำ <b>${esc(a.formula)}</b>
+        <span class="op">=</span> <b>${a.min}</b><br>
+        ${n} ${pass?"≥":"<"} ${a.min} <span class="op">→</span>
+        <span class="res" style="${pass?"":"color:var(--danger)"}">${pass?"ครบ ได้เต็ม "+a.full:"ไม่ถึง หัก "+a.ded+" เหลือ "+calcScore(c.id)}</span></div>
+      <div class="dim" style="margin-top:6px">
+        LLM คืนมาแค่ "รายการที่นับได้พร้อมตำแหน่ง" — ความยาวของรายการและการเทียบสูตรเป็นงานของระบบ</div>`;
+  }else{
+    body = `${levelRow(c.id,a.lv)}`;
+  }
+
+  const showWhy = kind!=="human" && !(S.blind && mine===undefined);
+  return `<div class="crit${open?" focus":""}${edited?" edited":""}">
+    <button class="ch" data-toggle="${c.id}">
+      <span class="dim" style="min-width:22px">${c.id}</span>
+      <div style="flex:1"><h4>${esc(c.t)}</h4><div class="dim" style="margin-top:2px">${esc(c.dim)}</div></div>
+      ${pill}
+      ${changed?`<span class="pill warn">แก้จาก ${a.lv}</span>`:""}
+    </button>
+    ${open?`<div class="cb">
+      <div style="padding:9px 0 2px;font-size:12px;color:var(--ink-2)">${esc(c.d)}</div>
+      ${body}
+      ${S.blind&&mine===undefined&&kind==="level"?`<div class="blindveil">โหมด blind — คะแนนและเหตุผลของ AI ถูกซ่อนไว้<br>
+        <span style="opacity:.7">ให้คะแนนของคุณก่อน แล้วระบบจะเปิดให้เทียบ · เวลาที่เปิดจะถูกบันทึก</span></div>`
+      :showWhy?`<div class="why"><div class="lead">${kind==="level"?"เหตุผลของ AI":"สิ่งที่ AI สังเกตเห็น (ไม่ใช่คะแนน)"}</div>
+        ${esc(a.why).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")}
+        ${a.rule?`<div style="margin-top:7px;font-family:var(--mono);font-size:11px;color:var(--ai)">ชั้นคำนวณ · ${esc(a.rule)}</div>`:""}
+        <div style="margin-top:6px">${evChips(c.id)}</div>
+      </div>
+      ${a.samples&&a.samples.length?`<div style="margin-top:8px">${confHtml(a.samples)}</div>`:""}`:""}
+      ${changed?`<textarea class="note" placeholder="เหตุผลที่แก้ (บังคับ) — ข้อความนี้กลายเป็นข้อมูลสอน AI รอบถัดไป"></textarea>`:""}
+    </div>`:""}
+  </div>`;
+}
+
+/* ============================================================
+   ชั้นคะแนนสุดท้าย — rubric แล้วค่อยหักส่งช้า ไม่ใช่เกณฑ์ใน rubric
+   กติกาจากเอกสาร TA: หักวันละ 10% ของคะแนนเต็ม · หักแล้วเหลือ ≤ 0 ให้ 1 คะแนน
+   ไม่ส่ง = 0 · ช้าเกิน 3 วัน = 0 และไม่ต้องตรวจ
+   ============================================================ */
+function ledgerHtml(g){
+  const w = W(), full = w.full;
+  if(g.st==="pending") return `<div class="ledger"><div class="lr"><span>ไม่ได้ส่งงาน</span>
+    <span class="v" style="color:var(--danger)">0</span></div>
+    <div class="dim" style="margin-top:4px">ไม่ส่ง = 0 · ต่างจากส่งช้าจนเหลือ 1 คะแนน</div></div>`;
+  if(g.late>3) return `<div class="ledger" style="border-color:var(--danger-line)">
+    <div class="lr"><span>ส่งช้า ${g.late} วัน — เกิน 3 วัน</span><span class="v" style="color:var(--danger)">0</span></div>
+    <div class="dim" style="margin-top:4px">ระบบไม่เรียก AI ตรวจงานชิ้นนี้เลย — ประหยัดค่าเรียกโมเดล และตรงกับที่เอกสารสั่ง TA ว่า "ไม่ต้องตรวจ"</div></div>`;
+  const raw = Math.round(full*g.r*2)/2;
+  const pen = Math.round(full*0.1*g.late*10)/10;
+  let fin = Math.round((raw-pen)*10)/10, floor = false;
+  if(g.late>0 && fin<=0){ fin = 1; floor = true; }
+  return `<div class="ledger">
+    <div class="lr"><span>คะแนนจาก rubric</span><span class="v">${raw} / ${full}</span></div>
+    ${g.late?`<div class="lr neg"><span>ส่งช้า ${g.late} วัน <span class="dim">(10% ของคะแนนเต็ม × ${g.late})</span></span>
+      <span class="v">−${pen}</span></div>`:`<div class="lr"><span class="dim">ส่งตรงเวลา</span><span class="v dim">−0</span></div>`}
+    <div class="sep"></div>
+    <div class="lr tot"><span><b>คะแนนสุดท้าย</b></span><span class="v">${fin}</span></div>
+    ${floor?`<div class="fl"><b>กฎพื้น:</b> หักแล้วเหลือ ${Math.round((raw-pen)*10)/10} ซึ่ง ≤ 0 → ให้ 1 คะแนน
+      <span style="opacity:.8">(กฎนี้เดาไม่ได้ ต้องเขียนไว้ในระบบตรง ๆ)</span></div>`:""}
+    <div class="dim" style="margin-top:6px">ทุกบรรทัดคำนวณจากสูตร ไม่มีใครพิมพ์ตัวเลขสุดท้ายเอง</div>
+  </div>`;
+}
+
+function fbankHtml(){
+  const w = W();
+  if(!w.fbank) return "";
+  return `<div class="crit" style="padding:11px 12px">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <h4 style="font-size:13px">ข้อความถึงนักศึกษา</h4>
+      <span class="pill ai">AI เลือกให้ ${w.aiFb.length} ประโยค</span>
+      <div class="spacer"></div><span class="dim">คลังประโยคของรายวิชา</span></div>
+    <div class="dim" style="margin-top:5px">AI <b>เลือกจากคลัง</b> ไม่ได้เขียนเอง — คุมโทนเสียงได้ ถูกลง และวัดความเห็นตรงกันได้เหมือนการให้คะแนน</div>
+    <div class="fbank">${w.fbank.map((t,i)=>{
+      const picked = S.fb[i]!==undefined ? S.fb[i] : w.aiFb.includes(i);
+      const byAi = w.aiFb.includes(i);
+      return `<button class="fb ${picked?(byAi&&S.fb[i]===undefined?"on":"pick"):""}" data-fb="${i}">${picked?"✓ ":""}${esc(t)}</button>`;
+    }).join("")}</div>
+    <textarea class="note" placeholder="เพิ่มข้อความเฉพาะกลุ่มนี้ (ไม่บังคับ)"></textarea>
+  </div>`;
+}
+
+function nudgeHtml(){
+  const w = W();
+  if(w.kind==="figma") return `<div class="nudge">
+    <b>คุณแก้คะแนนเกณฑ์ C3 (spacing scale) มาแล้ว 6 กลุ่ม และแก้<u>ขึ้น</u>ทุกครั้ง</b>
+    <div style="color:var(--ink-2);margin-top:4px">นี่ไม่ใช่เรื่องเกณฑ์ แต่เป็นเรื่อง<b>การอ่านไฟล์ Figma</b> —
+      ระยะห่างที่เกิดจาก auto-layout ถูกดึงมาไม่ครบ AI จึงวัดจากพิกัดดิบและได้ค่าที่เพี้ยน
+      ปัญหาอยู่ที่ชั้นอ่านไฟล์ ไม่ใช่ที่ rubric <b>การแก้คำอธิบายเกณฑ์จะไม่ช่วยอะไรเลย</b></div>
+    <div class="acts"><button class="btn sm primary">ส่งเป็นรายงานปัญหาชั้นอ่านไฟล์</button>
+      <button class="btn sm">ดูตัวอย่างที่อ่านพลาดทั้ง 6 กลุ่ม</button></div>
+    <div class="dim" style="margin-top:7px">ระบบแยกได้ว่า "เข้าใจเกณฑ์ต่างกัน" กับ "อ่านไฟล์ไม่ออก" คนละเรื่อง และแก้คนละที่</div></div>`;
+  if(w.kind==="heuristic") return `<div class="nudge">
+    <b>คุณแก้คะแนนเกณฑ์ H1 (การจับคู่ heuristic) มาแล้ว 5 กลุ่มติดกัน และแก้ขึ้นทุกครั้ง</b>
+    <div style="color:var(--ink-2);margin-top:4px">AI ตัดสินว่าผิดข้อในกรณีที่ปัญหาคาบเกี่ยวสองข้อ ซึ่งคุณยอมรับทั้งสองข้อ —
+      นี่คือความเข้าใจเกณฑ์ที่ต่างกัน ไม่ใช่ความต่างรายชิ้น</div>
+    <div class="acts"><button class="btn sm primary">ดูข้อเสนอปรับคำอธิบายให้ AI</button>
+      <button class="btn sm">ตรวจต่อ ค่อยดูตอนจบชิ้นงาน</button><button class="btn sm">ไม่ต้องเตือนเกณฑ์นี้อีก</button></div>
+    <div class="dim" style="margin-top:7px">ข้อเสนอถูกรวบเป็นชุดให้อนุมัติทีละข้อหลังประกาศคะแนน — ไม่มีอะไรเปลี่ยนกลางคัน</div></div>`;
+  const c = w.criteria[1];
+  return `<div class="nudge">
+    <b>คุณแก้คะแนนเกณฑ์ ${c.id} มาแล้ว 5 กลุ่มติดกัน</b> และแก้ไปในทางเดียวกันทุกครั้ง (AI ให้ต่ำกว่าคุณเฉลี่ย 0.8 ระดับ)
+    <div style="color:var(--ink-2);margin-top:4px">ระบบมองว่านี่น่าจะเป็นความเข้าใจเกณฑ์ที่ต่างกัน ไม่ใช่ความต่างรายชิ้น</div>
+    <div class="acts"><button class="btn sm primary">ดูข้อเสนอปรับคำอธิบายให้ AI</button>
+      <button class="btn sm">ตรวจต่อ ค่อยดูตอนจบชิ้นงาน</button><button class="btn sm">ไม่ต้องเตือนเกณฑ์นี้อีก</button></div>
+    <div class="dim" style="margin-top:7px">ข้อเสนอถูกรวบเป็นชุดให้อนุมัติทีละข้อหลังประกาศคะแนน — ไม่มีอะไรเปลี่ยนกลางคัน</div></div>`;
+}
+
+function workPicker(){
+  return `<select class="btn sm" id="worksel">${Object.entries(WORKS).map(([k,w])=>
+    `<option value="${k}"${k===S.work?" selected":""}>${esc(w.label)}</option>`).join("")}</select>`;
+}
+
+/* ============================================================ VARIANT A */
+function renderA(){
+  const g = GROUPS.find(x=>x.id===S.group), w = W();
+  const doneN = GROUPS.filter(x=>x.st==="done").length;
+  return `<div id="vA" class="${S.blind?"blindwrap":""}">
+  <div class="topbar">
+    <div class="crumb">UX/UI Design · 1/2569</div>${workPicker()}
+    <span class="pill ${S.blind?"ai":"mute"}">${S.blind?"◉ โหมด blind — ซ่อนคะแนน AI":"โหมดปกติ"}</span>
+    <button class="btn sm" data-act="blind">${S.blind?"ออกจากโหมด blind":"เข้าโหมด blind"}</button>
+    <div class="spacer"></div>
+    <span class="crumb">ยืนยันแล้ว ${doneN}/14</span><div class="prog"><i style="width:${doneN/14*100}%"></i></div>
+    <button class="btn sm">พักไว้ก่อน</button><button class="btn sm primary">ประกาศคะแนน</button>
+  </div>
+  <div class="wrap">
+    <div class="list"><div class="lh">14 กลุ่ม · เรียงตามคิว</div>
+      ${GROUPS.map(x=>`<button class="li${x.id===S.group?" on":""}" data-g="${x.id}">
+        <span class="dot ${x.st==="done"?"done":x.st==="fail"?"fail":x.flags.length?"q":""}"></span>
+        <span style="flex:1">${x.n}</span>
+        ${x.flags.length?`<span class="pill ${x.st==="fail"?"danger":"warn"}" style="padding:1px 6px;font-size:10px">${x.flags.length}</span>`:""}
+      </button>`).join("")}</div>
+    <div class="mid">
+      ${g.st==="fail"?`<div class="nudge" style="border-color:var(--danger-line);background:var(--danger-bg)">
+        <b style="color:var(--danger)">AI ตรวจกลุ่มนี้ไม่สำเร็จ</b> — เรียกซ้ำครบ 3 ครั้งแล้ว (API timeout ที่เกณฑ์ท้าย 2 ข้อ)
+        <div style="color:var(--ink-2);margin-top:3px">คะแนนไม่ถูกตั้งเป็น 0 · เกณฑ์ที่สำเร็จยังอยู่ครบ · เหลือ 2 ข้อรอคุณ</div>
+        <div class="acts"><button class="btn sm">สั่งตรวจเฉพาะข้อที่ค้าง</button><button class="btn sm">ให้คะแนนเองทั้งสองข้อ</button></div></div>`:""}
+      ${g.st==="toolate"?`<div class="nudge" style="border-color:var(--danger-line);background:var(--danger-bg)">
+        <b style="color:var(--danger)">ส่งช้า ${g.late} วัน — เกิน 3 วัน</b> ระบบไม่ส่งงานชิ้นนี้ให้ AI ตรวจเลย
+        <div style="color:var(--ink-2);margin-top:3px">กติกาของรายวิชาคือ "ช้าเกิน 3 วัน = 0 และไม่ต้องตรวจ" —
+          ระบบจึงตัดสินก่อนถึงชั้น AI ประหยัดทั้งเวลาและค่าเรียกโมเดล</div></div>`:""}
+      ${renderWork()}
+    </div>
+    <div class="side">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <h3 style="font-size:15px;flex:1">${g.n}</h3><span class="dim">${g.m} คน</span></div>
+      <div class="dim" style="margin-bottom:10px">${esc(w.label)}</div>
+      ${g.flags.map(f=>`<span class="pill warn" style="margin:0 4px 8px 0">▲ ${FLAGTXT[f]}</span>`).join("")}
+      ${ledgerHtml(g)}
+      ${nudgeHtml()}
+      ${w.criteria.map(c=>critBlock(c)).join("")}
+      ${fbankHtml()}
+      <div class="sidefoot">
+        <button class="btn" data-act="prevg">‹</button>
+        <button class="btn primary" style="flex:1" data-act="confirm">ยืนยันคะแนนกลุ่มนี้ <span class="kbd" style="border-color:currentColor;opacity:.6">⏎</span></button>
+        <button class="btn" data-act="nextg">›</button>
+      </div>
+    </div>
+  </div></div>`;
+}
+
+/* ============================================================ VARIANT B */
+function renderB(){
+  const w = W();
+  const c = w.criteria.find(x=>x.id===S.bCrit) || w.criteria[0];
+  const a = w.ai[c.id];
+  const order = GROUPS.filter(g=>g.st!=="pending");
+  const g = order[S.bIndex % order.length];
+  return `<div id="vB" class="${S.blind?"blindwrap":""}">
+  <div class="topbar">
+    ${workPicker()}
+    <select class="btn sm" id="bcritsel">${w.criteria.map(x=>`<option value="${x.id}"${x.id===c.id?" selected":""}>${x.id} — ${esc(x.t)}</option>`).join("")}</select>
+    <span class="pill ${S.blind?"ai":"mute"}">${S.blind?"◉ blind":"ปกติ"}</span>
+    <button class="btn sm" data-act="blind">สลับโหมด</button>
+    <div class="spacer"></div>
+    <span class="crumb">${S.bIndex}/${order.length} กลุ่มในเกณฑ์นี้</span>
+    <div class="prog"><i style="width:${S.bIndex/order.length*100}%"></i></div>
+  </div>
+  <div class="stage">
+    <div class="critbar">
+      <div style="flex:1;min-width:280px">
+        <div class="dim">${esc(c.dim)}</div>
+        <h2 style="font-size:17px;margin:2px 0 4px">${c.id} · ${esc(c.t)}</h2>
+        <div style="color:var(--ink-2);max-width:74ch">${esc(c.d)}</div>
+      </div>
+      <div style="text-align:right;min-width:190px">
+        <div class="dim">ระดับที่ให้ไปแล้วในเกณฑ์นี้</div>
+        <div style="display:flex;gap:4px;justify-content:flex-end;margin-top:5px">
+          ${(w.levels||LEVELS).map((L,i)=>`<span class="pill mute" style="min-width:38px;justify-content:center">${L.n}<b style="margin-left:3px">${[0,4,3,1][i]??0}</b></span>`).join("")}</div>
+        <div class="dim" style="margin-top:5px">ยังไม่มีใครได้ระดับต่ำสุด — น่าสงสัย</div>
+      </div>
+    </div>
+    ${nudgeHtml()}
+    <div class="deck">
+      <div class="stack"><div class="cardq">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px;flex-wrap:wrap">
+          <h3 style="font-size:15px">${g.n}</h3>
+          ${g.flags.map(f=>`<span class="pill warn">▲ ${FLAGTXT[f]}</span>`).join("")}
+          <div class="spacer"></div>
+          ${S.blind?'<span class="pill ai">คะแนน AI ถูกซ่อน</span>':(a.samples&&a.samples.length?confHtml(a.samples):"")}
+        </div>
+        ${renderWork()}
+        <div style="margin-top:10px">${critBlock(c,true)}</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn primary" data-act="bnext">รับตามที่ AI เสนอ <span class="kbd" style="border-color:currentColor;opacity:.6">⏎</span></button>
+          <button class="btn" data-act="bnext">ข้ามไว้ก่อน <span class="kbd">S</span></button>
+          <div class="spacer"></div><span class="dim">เฉลี่ย 14 วินาที/กลุ่ม ในเกณฑ์นี้</span>
+        </div>
+      </div></div>
+      <div>
+        <div class="queue"><div style="padding:8px 11px;border-bottom:1px solid var(--line)" class="dim">คิวของเกณฑ์ ${c.id}</div>
+          ${order.map((x,i)=>`<div class="qi ${i===S.bIndex?"on":i<S.bIndex?"done":""}">
+            <span class="n">${String(i+1).padStart(2,"0")}</span><span style="flex:1">${x.n}</span>
+            ${i<S.bIndex?`<span class="pill teacher" style="padding:1px 6px">${[3,2,3,2,3,3,4,2,3,3,2,3,3][i]}</span>`
+             :x.flags.length?'<span class="pill warn" style="padding:1px 6px">▲</span>':""}</div>`).join("")}
+        </div>
+        <div style="margin-top:10px;padding:11px;border:1px dashed var(--line-2);border-radius:var(--r);font-size:12px;color:var(--ink-2)">
+          <b style="color:var(--ink)">ทำไมไล่ทีละเกณฑ์</b><br>
+          อ่านคำอธิบายเกณฑ์รอบเดียวแล้วตัดสิน 13 กลุ่มติดกัน ทำให้เส้นแบ่งระหว่างระดับนิ่งกว่าการสลับเกณฑ์ไปมา
+          และเห็นทันทีว่าทั้งชั้นเกาะกลุ่มผิดปกติตรงไหน
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="keys">
+    <span>${(w.levels||LEVELS).map(L=>`<span class="kbd">${L.n}</span>`).join("")} ให้ระดับ</span>
+    <span><span class="kbd">⏎</span> รับตาม AI แล้วไปกลุ่มถัดไป</span>
+    <span><span class="kbd">E</span> ใส่เหตุผล</span><span><span class="kbd">F</span> เปิดไฟล์เต็ม</span>
+    <span><span class="kbd">S</span> ข้าม</span><span><span class="kbd">⌘Z</span> ย้อน</span>
+    <div class="spacer"></div><span style="color:var(--ink-3)">ตรวจได้โดยไม่ต้องแตะเมาส์เลย</span>
+  </div></div>`;
+}
+
+/* ============================================================ VARIANT C */
+function cellScore(gi,ci){
+  const g = GROUPS[gi], w = W();
+  if(g.st==="pending" || g.st==="toolate") return null;
+  if(g.st==="fail" && ci>=w.criteria.length-2) return null;
+  const c = w.criteria[ci], k = c.k||"level";
+  const h = (gi*7+ci*3+S.work.length)%4;              /* 0..3 อ่อน→เข้ม */
+  if(k==="level"){
+    const lv = w.levels||LEVELS;
+    return {v:lv[Math.round(h/3*(lv.length-1))].n, h:h+1};
+  }
+  return {v:Math.round(w.ai[c.id].full*(0.4+h*0.2)*2)/2, h:h+1};
+}
+function renderC(){
+  const w = W(), crits = w.criteria;
+  const gsel = S.drawer?GROUPS.find(g=>g.id===S.drawer.g):null;
+  const csel = S.drawer?crits.find(c=>c.id===S.drawer.c):null;
+  const queueN = GROUPS.filter(g=>g.flags.length).length;
+  return `<div id="vC">
+  <div class="topbar">
+    ${workPicker()}<span class="pill mute">rubric v1 · JudgePrompt v4</span>
+    <div class="spacer"></div><button class="btn sm">ส่งออก .xlsx</button><button class="btn sm primary">ประกาศคะแนน</button>
+  </div>
+  <div class="page">
+    <div class="colgroup">
+      <div class="stat"><b>13/14</b><span>AI ตรวจสำเร็จ</span></div>
+      <div class="stat"><b>${queueN}</b><span>ต้องเปิดดูก่อนยืนยัน</span></div>
+      <div class="stat"><b>3</b><span>อยู่ในชุด blind</span></div>
+      <div class="stat"><b>${13*crits.length}</b><span>คู่ (งาน × เกณฑ์)</span></div>
+      <div class="stat" style="border-color:var(--warn-line);background:var(--warn-bg)">
+        <b style="color:var(--warn)">${crits[1].id}</b><span>เกณฑ์ที่คุณแก้บ่อยที่สุด</span></div>
+    </div>
+    <div class="nudge">
+      <b>ยืนยันยกชั้นได้ แต่ต้องเปิดดู ${queueN} กลุ่มนี้ก่อน</b>
+      <div style="color:var(--ink-2);margin-top:3px">${GROUPS.filter(g=>g.flags.length).map(g=>
+        `${g.n} <span class="dim">(${g.flags.map(f=>FLAGTXT[f]).join(", ")})</span>`).join(" · ")}</div>
+      <div class="acts"><button class="btn sm primary">เปิดดูทีละกลุ่มตามคิว</button>
+        <button class="btn sm" disabled style="opacity:.45;cursor:not-allowed">ยืนยันยกชั้น (ล็อกอยู่)</button></div>
+    </div>
+    <div style="overflow-x:auto">
+    <table class="mx"><thead><tr><th class="name">กลุ่ม</th>
+      ${crits.map(c=>`<th title="${esc(c.t)}">${c.id}<br><span style="font-weight:400;opacity:.7">${esc(c.t.slice(0,9))}…</span></th>`).join("")}
+      <th>รวม</th><th>สถานะ</th></tr></thead><tbody>
+      ${GROUPS.map((g,gi)=>{
+        const row = crits.map((_,ci)=>cellScore(gi,ci));
+        const sum = Math.round(row.reduce((a,b)=>a+(b?b.v:0),0)*10)/10;
+        return `<tr><td class="name">${g.n}${g.flags.length?' <span class="pill warn" style="padding:0 5px;font-size:9.5px">▲</span>':""}</td>
+        ${row.map((cell,ci)=>`<td><button class="sc ${cell?"h"+cell.h:""}" data-cell="${g.id}|${crits[ci].id}">
+          ${cell?cell.v:'<span style="color:var(--ink-3);font-weight:400">—</span>'}
+          ${g.flags.includes("blind")?'<span class="flag b"></span>':g.flags.length&&ci===1?'<span class="flag q"></span>':""}
+        </button></td>`).join("")}
+        <td><div class="sc">${g.st==="pending"||g.st==="toolate"?"0":sum}</div></td>
+        <td><div class="sc" style="font-size:11px">${
+          g.st==="done"?'<span class="pill teacher">ยืนยันแล้ว</span>':
+          g.st==="fail"?'<span class="pill danger">ตรวจไม่สำเร็จ</span>':
+          g.st==="toolate"?'<span class="pill danger">ช้าเกิน 3 วัน</span>':
+          g.st==="pending"?'<span class="pill mute">ยังไม่ส่ง</span>':'<span class="pill ai">รอยืนยัน</span>'}</div></td></tr>`;
+      }).join("")}</tbody></table></div>
+    <div style="display:flex;gap:14px;margin-top:10px;font-size:11.5px;color:var(--ink-3);flex-wrap:wrap">
+      <span><span style="display:inline-block;width:7px;height:7px;border-radius:9px;background:var(--ai)"></span> ชุด blind</span>
+      <span><span style="display:inline-block;width:7px;height:7px;border-radius:9px;background:var(--warn)"></span> คิวบังคับดู</span>
+      <div class="spacer"></div><span>คลิกช่องใดก็ได้เพื่อเปิดหลักฐานและแก้คะแนน</span>
+    </div>
+    <div style="margin-top:14px;padding:12px;border:1px dashed var(--line-2);border-radius:var(--r);font-size:12.5px;color:var(--ink-2);max-width:80ch">
+      <b style="color:var(--ink)">อ่านตารางนี้ตามคอลัมน์ ไม่ใช่ตามแถว</b> — คอลัมน์ที่สีเข้มเกือบทั้งคอลัมน์
+      มักแปลว่า AI ตีความเกณฑ์ไม่ตรงกับที่คุณตั้งใจ มากกว่าจะแปลว่าทั้งชั้นทำไม่ได้จริง
+    </div>
+  </div>
+  <div class="drawer${S.drawer?" on":""}">${S.drawer?`
+    <div class="dh"><b>${gsel.n} · ${csel.id}</b><span class="dim">${esc(csel.t)}</span>
+      <div class="spacer"></div><button class="btn sm" data-act="cprev">‹</button>
+      <button class="btn sm" data-act="cnext">›</button><button class="btn sm" data-act="closedrawer">ปิด</button></div>
+    <div class="db">${renderWork()}<div style="margin-top:12px">${critBlock(csel,true)}</div></div>`:""}
+  </div></div>`;
+}
+
+/* ============================================================ */
+const VARIANTS = {
+  A:{name:"ห้องตรวจ — ชิ้นงานเป็นศูนย์กลาง", render:renderA},
+  B:{name:"สายพาน — ไล่ทีละเกณฑ์ข้ามทั้งชั้น", render:renderB},
+  C:{name:"แผงควบคุม — ตารางทั้งชั้นเป็นจุดตั้งต้น", render:renderC},
+};
+const KEYS = Object.keys(VARIANTS);
+
+/* ล้างสิ่งที่ผู้ตรวจแตะไว้เมื่อย้ายกลุ่ม/ชิ้นงาน — prototype ไม่เก็บอะไรทั้งนั้น */
+function reset(){ S.mine={}; S.chk={}; S.cnt={}; S.fb={}; S.activeEv=null; }
+
+function render(){
+  const w = W();
+  if(!S.focusCrit || !w.ai[S.focusCrit]) S.focusCrit = w.criteria[1].id;
+  if(!S.bCrit || !w.ai[S.bCrit]) S.bCrit = w.criteria[0].id;
+  document.getElementById("root").innerHTML = VARIANTS[S.variant].render();
+  document.getElementById("plabel").innerHTML = `${S.variant} <small>${VARIANTS[S.variant].name}</small>`;
+}
+function setVariant(v){
+  S.variant=v; S.drawer=null;
+  const u=new URL(location); u.searchParams.set("variant",v); history.replaceState({},"",u);
+  render();
+}
+
+document.addEventListener("click",e=>{
+  const t = e.target.closest("[data-g],[data-ev],[data-lv],[data-toggle],[data-act],[data-cell],[data-chk],[data-cnt],[data-fb]");
+  if(!t) return;
+  if(t.dataset.chk){ const k=t.dataset.chk, [cid,i]=k.split("|");
+    S.chk[k] = !okOf(cid,+i); render(); return; }
+  if(t.dataset.cnt){ const [cid,d]=t.dataset.cnt.split("|");
+    S.cnt[cid] = Math.max(0, cntOf(cid)+ +d); render(); return; }
+  if(t.dataset.fb){ const i=+t.dataset.fb, w=W();
+    const cur = S.fb[i]!==undefined ? S.fb[i] : w.aiFb.includes(i);
+    S.fb[i] = !cur; render(); return; }
+  if(t.dataset.g){ S.group=t.dataset.g; render(); return; }
+  if(t.dataset.cell){ const [g,c]=t.dataset.cell.split("|"); S.drawer={g,c}; S.focusCrit=c; S.activeEv=null; render(); return; }
+  if(t.dataset.lv){ const cid=t.dataset.crit, lv=+t.dataset.lv;
+    if(S.mine[cid]===lv) delete S.mine[cid]; else S.mine[cid]=lv; render(); return; }
+  if(t.dataset.ev){ S.activeEv = S.activeEv===t.dataset.ev?null:t.dataset.ev;
+    S.focusCrit = t.dataset.ev.split("|")[0]; render(); return; }
+  if(t.dataset.toggle){ S.focusCrit = S.focusCrit===t.dataset.toggle?null:t.dataset.toggle; S.activeEv=null; render(); return; }
+  const a = t.dataset.act;
+  if(a==="blind"){ S.blind=!S.blind; render(); }
+  if(a==="closedrawer"){ S.drawer=null; render(); }
+  if(a==="bnext"){ S.bIndex=(S.bIndex+1)%13; reset(); render(); }
+  if(a==="nextg"||a==="prevg"||a==="confirm"){
+    const i=GROUPS.findIndex(g=>g.id===S.group);
+    if(a==="confirm") GROUPS[i].st="done";
+    S.group=GROUPS[(i+(a==="prevg"?-1:1)+GROUPS.length)%GROUPS.length].id;
+    reset(); render();
+  }
+  if(a==="cnext"||a==="cprev"){
+    const cs=W().criteria, i=cs.findIndex(c=>c.id===S.drawer.c);
+    S.drawer.c = cs[(i+(a==="cnext"?1:-1)+cs.length)%cs.length].id;
+    S.focusCrit=S.drawer.c; S.activeEv=null; render();
+  }
+});
+
+document.addEventListener("change",e=>{
+  if(e.target.id==="worksel"){ S.work=e.target.value; S.focusCrit=null; S.bCrit=null;
+    S.drawer=null; reset(); render(); }
+  if(e.target.id==="bcritsel"){ S.bCrit=e.target.value; S.bIndex=0; reset(); render(); }
+});
+
+document.getElementById("pv").onclick=()=>setVariant(KEYS[(KEYS.indexOf(S.variant)-1+KEYS.length)%KEYS.length]);
+document.getElementById("nx").onclick=()=>setVariant(KEYS[(KEYS.indexOf(S.variant)+1)%KEYS.length]);
+
+document.addEventListener("keydown",e=>{
+  const ae = document.activeElement, tag = ae?ae.tagName:"";
+  if(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT"||(ae&&ae.isContentEditable)) return;
+  if(e.key==="ArrowLeft") document.getElementById("pv").click();
+  if(e.key==="ArrowRight") document.getElementById("nx").click();
+  if(S.variant==="B"){
+    const scale = (W().levels||LEVELS).map(x=>String(x.n));
+    if(scale.includes(e.key)){ S.mine[S.bCrit]=+e.key; render(); }
+    if(e.key==="Enter"){ S.bIndex=(S.bIndex+1)%13; reset(); render(); }
+  }
+});
+
+S.variant = new URL(location).searchParams.get("variant") || "A";
+if(!KEYS.includes(S.variant)) S.variant="A";
+render();
+</script>
